@@ -27,7 +27,7 @@ In this workshop, we place a strong emphasis on using Infrastructure as Code (Ia
 
 ## Challenges 🛠️
 
-### Option 1: EC2 Log Export to S3 on AWS
+### EC2 Log Export to S3 on AWS
 
 In this challenge, you are tasked with setting up an AWS environment to export EC2 instance execution logs to an S3 bucket. This will involve integrating and automating services such as CloudWatch Logs and AWS Lambda, using either AWS CloudFormation, Terraform, or Ansible.
 
@@ -44,20 +44,23 @@ In this challenge, you are tasked with setting up an AWS environment to export E
 
 ## Submission Guidelines 📝
 
-- **Create a Personal Repository**: Start by creating a new repository on GitHub for your project. This repository can be private. Once completed, grant access to our team by adding our GitHub usernames as collaborators.
-  
-- **Documentation**: In your repository, maintain a detailed `docs` folder. Your documentation should include:
-- **Project Overview**: A brief description of the chosen challenge and your approach.
-- **Technical Details**: Document your architectural decisions, choice of tools, and configurations. Include explanations for both automated and manual steps, especially where automation wasn't feasible.
-- **Challenges and Solutions**: Discuss any challenges you encountered and how you resolved them.
-- **Security Considerations**: Explain how you implemented security measures, focusing on the principle of least privilege.
-- **Future Improvements**: Ideas or plans for enhancing the project if given more time or resources.
+- **Branch Access and Code Submission**:
+  - You will find a new branch on our [GitHub repository](https://github.com/devsecops-sap/devsecops-workshop) named after your lastname. Please access this branch to submit your work.
+  - Push all your code, scripts, and configuration files to this branch. Ensure that your files are well-organized and clearly commented.
 
-- **Code and Configuration**: Ensure all your code, scripts, and configuration files are well-commented and organized in the repository.
+- **Documentation**:
+  - Within your branch, create and maintain a detailed `docs` folder.
+  - **Project Overview**: Include a brief description of the chosen challenge and your approach.
+  - **Technical Details**: Document your architectural decisions, choice of tools, and configurations. Provide explanations for both automated and manual steps, especially where automation wasn't feasible.
+  - **Challenges and Solutions**: Discuss any challenges you encountered and how you resolved them.
+  - **Security Considerations**: Detail how you have implemented security measures, focusing on the principle of least privilege.
 
-- **Presentation**: Prepare a brief presentation (can be a slide deck in the `presentation` folder of your repository) summarizing your project. You will be presenting this to our team, focusing on the architecture, your development process, and key learnings.
+- **Presentation**:
+  - Prepare a concise presentation (about 30 minutes) summarizing your project. This can be in the form of a slide deck, placed in the `presentation` folder within your branch.
+  - Your presentation should cover the project's architecture, your development process, key learnings, and a demonstration of your code.
+  - You will present this to our team, where we'll discuss your approach, your code, and any interesting aspects or challenges you faced.
 
-- **Final Submission**: Once your project is complete, ensure all your work is pushed to your GitHub repository. Then, email us the link to your repository along with a request to access it.
+**Note**: This is your opportunity to showcase not just your technical skills but also your ability to communicate your work effectively. We look forward to understanding your thought process, decision-making, and problem-solving strategies.
 
 **Note**: We encourage clarity and thoroughness in your documentation and presentation. This is your opportunity to showcase not only your technical skills but also your ability to communicate and document your work effectively.
 
