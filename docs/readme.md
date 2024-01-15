@@ -32,7 +32,7 @@ VM logs are to be retrieved via the created Azure function (running on the same 
 - 30 minute presentation (slide deck at [presentation](./presentation))
 
 ## Execution plan
-- [ ] read main `readme.md`.
+- [x] read main `readme.md`.
 - [ ] read AWS example provided by Gabriel (it may provide insights and shortcuts I haven't thought of).
 - [ ] create `Terraform` script to `terraform apply/destroy` VNET (it should cost peanuts 🥜).
 - [ ] deploy VM last as it is likely the most expensive resource of them all.
