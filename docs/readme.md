@@ -37,7 +37,7 @@ VM logs are to be retrieved via the created Azure function (running on the same 
 - [x] read main `readme.md`.
 - [x] mock solution diagram.
 - [x] read AWS example provided by Gabriel (it may provide insights and shortcuts I haven't thought of).
-- [ ] local setup. [detailed task](#local-environment-setup).
+- [x] local setup. [detailed task](#local-environment-setup). Tested with Terraform for creating/destroying resource group in Azure.
 - [ ] cost estimate calculations for the proposed solution (top it at 200 USD)
 - [ ] create `Terraform` script to `terraform apply/destroy` VNET (it should cost peanuts 🥜).
 - [ ] deploy VM last as it is likely the most expensive resource of them all.
