@@ -42,6 +42,27 @@ In this challenge, you are tasked with setting up an AWS environment to export E
 
 **Note**: This challenge assesses your ability to integrate and automate AWS services effectively using IaC tools. Focus on the efficiency and security of your automation scripts, whether you choose CloudFormation, Terraform, or Ansible.
 
+### Azure Databricks and VM Setup with Blob Log Export on Azure
+
+**Azure Databricks Configuration**
+- Automate the setup of Azure Databricks for data analytics and processing.
+**Virtual Network (VNET) and VM Setup**
+- Provision a VNET for Azure resources using Terraform.
+- Spin up an Azure VM within this VNET. Choose a suitable VM size based on the project's requirements.
+**Log Export to Azure Blob Storage**
+- Configure the system to automatically send logs from the VNET and VM to Azure Blob Storage for centralized logging and analysis.
+**Azure Key Vault Integration**
+- Use Azure Key Vault to manage secrets and access credentials securely, particularly for accessing Blob Storage.
+**Azure Functions and Event Grid Configuration**
+- Develop Azure Functions to automate tasks and processes within your Azure environment.
+- Integrate Azure Event Grid to manage events and triggers, enhancing the automation of log retrieval and other tasks.
+**Log Retrieval Automation**
+- Set up a system to automatically retrieve logs from Azure Blob Storage to a preferred location using Azure Functions and Event Grid.
+**Infrastructure as Code (IaC) Deployment**
+- Automate the deployment of all components (Databricks, VM, Azure Functions, Event Grid, etc.) using Terraform.
+**Security and Networking Considerations**
+- Ensure robust networking setup, including Network Security Groups (NSGs) and other security measures, following best practices.
+
 ## Submission Guidelines 📝
 
 - **Branch Access and Code Submission**:
