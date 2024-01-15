@@ -1,3 +1,9 @@
+# macOS stuff
+.DS_Store
+
+# local access info
+secrets/
+
 # Local .terraform directories
 **/.terraform/*
 
