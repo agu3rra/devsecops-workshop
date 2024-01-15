@@ -9,6 +9,7 @@
     - [Expected outcomes](#expected-outcomes)
     - [Execution plan](#execution-plan)
     - [Technical details](#technical-details)
+        - [Solution diagram](#solution-diagram)
     - [Challenges](#challenges)
     - [Security](#security)
 
@@ -33,6 +34,7 @@ VM logs are to be retrieved via the created Azure function (running on the same 
 
 ## Execution plan
 - [x] read main `readme.md`.
+- [x] mock solution diagram.
 - [ ] read AWS example provided by Gabriel (it may provide insights and shortcuts I haven't thought of).
 - [ ] create `Terraform` script to `terraform apply/destroy` VNET (it should cost peanuts 🥜).
 - [ ] deploy VM last as it is likely the most expensive resource of them all.
@@ -43,7 +45,10 @@ VM logs are to be retrieved via the created Azure function (running on the same 
 - [ ] contact Gabriel and Hemanth for follow up call.
 
 ## Technical details
-Coming soon...
+### Solution diagram
+![solution](./assets/block-diagram.png)
+
+> More soon...
 
 ## Challenges
 1. How to generate `WARNING/ERROR` type logs in case everything goes smoother than usual.
