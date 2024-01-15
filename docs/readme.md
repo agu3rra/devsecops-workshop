@@ -35,7 +35,8 @@ VM logs are to be retrieved via the created Azure function (running on the same 
 ## Execution plan
 - [x] read main `readme.md`.
 - [x] mock solution diagram.
-- [ ] read AWS example provided by Gabriel (it may provide insights and shortcuts I haven't thought of).
+- [x] read AWS example provided by Gabriel (it may provide insights and shortcuts I haven't thought of).
+- [ ] install Azure CLI locally so I can `terraform apply` from my local machine. [reference](https://developer.hashicorp.com/terraform/tutorials/azure-get-started/azure-build);
 - [ ] create `Terraform` script to `terraform apply/destroy` VNET (it should cost peanuts 🥜).
 - [ ] deploy VM last as it is likely the most expensive resource of them all.
 - [ ] see what I can get out of Azure function. I am guessing I can drag drop my way there to do fun stuff for me.
@@ -55,6 +56,10 @@ VM logs are to be retrieved via the created Azure function (running on the same 
 1. Latency: how frequent do we trigger log retrieval? Pooling or event-based?
 1. How to ensure we don't send a gargantuan amount of logs to blobs, so I don't have to sell my kidney to pay for it. 😅
 1. Do we write a pipeline that does `terraform apply` upon receiving updates on this repo?
+1. Define upload path semantics
+1. What happens if they ask me to start sending logs from a new VM? Can I have it so, I can simply append the new VM in the list and magic happens? Upload paths should allow VM identification to effective blob retrieval.
+1. Encoding of logs before sending so they don't get messed up because of special formatting.
+1. How can I detect if the VM was shutdown and logs are no longer flowing?
 
 ## Security
 - restrict VNET access via NSG.
