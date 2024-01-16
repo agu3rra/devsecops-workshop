@@ -146,6 +146,7 @@ This is how it ended up like. I don't think I'll be using all of it, and since i
 1. Encoding of logs before sending so they don't get messed up because of special formatting.
 1. How can I detect if the VM was shutdown and logs are no longer flowing?
 1. How does an Azure Function receive input?
+1. Issue with Terraform latest `azurerm` plugin. ANS.: Using version 3.55.0. It's been quite tedious to quickly change provider version. I can't explain why newer versions fail to be able to register with Azure. One can disable registration, but I just avoided doing that as it seems it can mess up my Azure thingy.
 
 ## Security
 - restrict VNET access via NSG.
