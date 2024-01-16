@@ -3,7 +3,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0.2"
+      version = "~> 3.87.0
     }
   }
 
@@ -16,7 +16,7 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "rg" {
   name     = "guerraVmLoggingRg"
-  location = "Central US"
+  location = "East US"
 }
 
 # Resource VNET

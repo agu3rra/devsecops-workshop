@@ -1,7 +1,7 @@
 # Execution notes
 
 ## Summary
-<!-- TOC depthTo:3 -->
+<!-- TOC depthTo:4 -->
 
 - [Execution notes](#execution-notes)
     - [Summary](#summary)
@@ -11,6 +11,13 @@
     - [Technical details](#technical-details)
         - [Solution diagram](#solution-diagram)
         - [Execution](#execution)
+            - [Getting my Azure account](#getting-my-azure-account)
+            - [Local environment setup](#local-environment-setup)
+            - [Which infra region to select](#which-infra-region-to-select)
+            - [Estimating solution cost](#estimating-solution-cost)
+            - [Architect for high volume/low volume](#architect-for-high-volumelow-volume)
+            - [Upload path semantics](#upload-path-semantics)
+            - [Cost estimates](#cost-estimates)
     - [Challenges & Solutions](#challenges--solutions)
     - [Security](#security)
 
@@ -38,9 +45,9 @@ VM logs are to be retrieved via the created Azure function (running on the same 
 - [x] mock solution diagram.
 - [x] read AWS example provided by Gabriel (it may provide insights and shortcuts I haven't thought of).
 - [x] local setup. [detailed task](#local-environment-setup). Tested with Terraform for creating/destroying resource group in Azure.
-- [ ] cost estimate calculations for the proposed solution (top it at 200 USD)
-- [ ] create `Terraform` script to `terraform apply/destroy` VNET (it should cost peanuts 🥜).
-- [ ] deploy VM last as it is likely the most expensive resource of them all.
+- [x] define upload path semantics to ABS.
+- [x] cost estimate calculations for the proposed solution (top it at 200 USD)
+- [ ] refer to [Terraform azurerm docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs), so understand the input I need to provide to my Terraform script. Perhaps visit some of the resources in the Azure Portal UI to see if I get any additional contextual info that can help me decide how to configure each resource.
 - [ ] see what I can get out of Azure function. I am guessing I can drag drop my way there to do fun stuff for me.
 - [ ] note down challenges and solutions as I progress.
 - [ ] do blob reading to local terminal.
@@ -105,17 +112,40 @@ Looking at the overall architecture and for the purpose of the exercise, I belie
 Azure Function's sole purpose is log writing without having to worry how the events got there.
 I could of course, simply write a piece of code that reads and parses code straight from the VM, but that'd probably be harder to maintain/deploy.
 
+#### Upload path semantics
+In order to make it easier to identify and filter in Azure Blob Storage, what is the VM that logged a particular blob, we'll use the following upload path:
+> `<bucket-id>/<resource-group>/<vm-identifier>/somelogfile.log`
+
+PS: The Azure Subscription ID is not considered necessary as the solution itself is assumed to live within the boundaries of a single subscription and resource group. If that changes then we need to adapt 😉.
+
+#### Cost estimates
+Using [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/):
+- VM: using the cheapest I can find since its sole purpose is to generate logs for the exercise. Selected: B1ls at USD 0.0062/hour
+- Azure Monitor: Do I get security alerts for free in case I mess up my settings?
+- Azure Event Grid: routing events magically for Azure stuff. Like Kafka it seems. It also allows filtering, but I suspect I'll save some `$$$` if I can filter events on Azure Monitor, outbound to Event Grid.
+- Azure functions: ball parking at about 1 million calls/month.
+- Storage: selected the hot storage flavor with local redundancy only as I don't have to worry about increased costs when accessing the data. Again, for the purposes of this exercise this is perhaps not soooo relevant.
+
+PS: I noticed `East US` resources are cheaper.
+
+This is how it ended up like. I don't think I'll be using all of it, and since it is within my 200 USD limit I'll go for it.
+
+![costs](./assets/costs.png)
+
+
+
 > More soon...
 
 ## Challenges & Solutions
 1. How to generate `WARNING/ERROR` type logs in case everything goes smoother than usual.
-1. Latency: how frequent do we trigger log retrieval? Pooling or event-based?
+1. Latency: how frequent do we trigger log retrieval? Pooling or event-based? **ANS.:** The architecture using Azure Monitor and Event Grid makes it event-based. Event-Grid triggers a call to the Azure Function that effectively logs an entry to Azure Blob Storage.
 1. How to ensure we don't send a gargantuan amount of logs to blobs, so I don't have to sell my kidney to pay for it. 😅
-1. Do we write a pipeline that does `terraform apply` upon receiving updates on this repo?
-1. Define upload path semantics.
+1. Do we write a pipeline that does `terraform apply` upon receiving updates on this repo? ANS.: Perhaps it will be a bit messy integrating SAP's Github.tools to AzureDevOps? Let's try local Terraform only.
+1. Define upload path semantics. ANS.: done [here](#upload-path-semantics).
 1. What happens if they ask me to start sending logs from a new VM? Can I have it so, I can simply append the new VM in the list and magic happens? Upload paths should allow VM identification for effective blob retrieval.
 1. Encoding of logs before sending so they don't get messed up because of special formatting.
 1. How can I detect if the VM was shutdown and logs are no longer flowing?
+1. How does an Azure Function receive input?
 
 ## Security
 - restrict VNET access via NSG.
