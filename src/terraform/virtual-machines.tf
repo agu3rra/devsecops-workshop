@@ -7,7 +7,7 @@ resource "azurerm_linux_virtual_machine" "mylinux" {
   admin_username = "iamgroot"
   admin_ssh_key {
     username = "iamgroot"
-    public_key = file("~/.ssh/azure-devops-workshop/id_rsa.pub")
+    public_key = file("~/.ssh/id_rsa.pub")
   }
   network_interface_ids = [
     azurerm_network_interface.main.id
@@ -21,7 +21,7 @@ resource "azurerm_linux_virtual_machine" "mylinux" {
   source_image_reference {
     publisher = "Canonical"
     offer = "UbuntuServer"
-    sku = "minimal-18_04-lts"
-    version = "18.04.202212090"
+    sku = "18.04-LTS"
+    version = "latest"
   }
 }

@@ -132,7 +132,20 @@ This is how it ended up like. I don't think I'll be using all of it, and since i
 
 ![costs](./assets/costs.png)
 
+#### Terraform Plugin issues
+It turns out that using such a dated version of the `azurerm` Terraform plugin became rather problematic. 3.55.0 (about 10 months old) was the only one not giving me a hard time on macOS.
 
+#### Virtual Machine
+Using `az monitor diagnostic-settings categories list --resource [GIGANTIG_VM_IDENTIFIER]` I was able to tell my VM is currently only providing me with `Metrics` events.
+I want more!
+
+I found something called [Azure Monitor Agent](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/agents-overview) which I need to enable in order to be able to send the more fun telemetry to Azure Monitor.
+
+Since I am done for the day, I'll deallocate the VM to save costs:
+```bash
+az vm stop --name guerra-mylinux --resource-group guerra-VmLoggingRg
+az vm deallocate --name guerra-mylinux --resource-group guerra-VmLoggingRg
+```
 
 > More soon...
 
