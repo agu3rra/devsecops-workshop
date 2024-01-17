@@ -226,6 +226,10 @@ global.handler.control.monitor.azure.com
 
 Next step: verify if the system assigned account to the data collection setup is failing us. Work with an user defined one.
 
+PS: The manual rule I created following [this doc](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/data-collection-syslog#configure-syslog-on-the-linux-agent) looks exactly like the rule I created via Terraform. The tutorial does mention a 20 minute wait until some action is perceived, so I'll leave the VM running overnight. I saw no Linux Agents detected in Azure Portal.
+
+**JACKPOT!**: I was missing the linux kind on my Terraform script. Perhaps it's what was keeping my AMA logs from showing up. That and the network rules of course! I matched facility names and log levels as the working log to make sure I can now Terraform this stuff. 🤞
+
 > More soon...
 
 ## Challenges & Solutions
@@ -252,6 +256,7 @@ Next step: verify if the system assigned account to the data collection setup is
 - TODO: [Docs on storage accounts](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) indicate that we can apply `network_rules` to allow list specific public IP's.
 - TODO: public_network_access_enabled = true revisit this for `azurerm_monitor_data_collection_endpoint`.
 - TODO: potential failure: f4a01be1-2c31-422b-bbef-78e86da34134.ods.opinsights.azure.com is not pinging even after NSG update.
+- TODO: Use service tags to update NSG rules that allow the VM to talk to Azure Monitor as [here](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-data-collection-endpoint).
 
 ## Security
 - restrict VNET access via NSG.

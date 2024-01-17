@@ -1,0 +1,87 @@
+{
+    "properties": {
+        "immutableId": "dcr-6e6f4b32af554428bff775714a4133a9",
+        "dataSources": {
+            "syslog": [
+                {
+                    "streams": [
+                        "Microsoft-Syslog"
+                    ],
+                    "facilityNames": [
+                        "alert",
+                        "audit",
+                        "auth",
+                        "authpriv",
+                        "clock",
+                        "cron",
+                        "daemon",
+                        "ftp",
+                        "kern",
+                        "local0",
+                        "local1",
+                        "local2",
+                        "local3",
+                        "local4",
+                        "local5",
+                        "local6",
+                        "local7",
+                        "lpr",
+                        "mail",
+                        "news",
+                        "nopri",
+                        "ntp",
+                        "syslog",
+                        "user",
+                        "uucp"
+                    ],
+                    "logLevels": [
+                        "Debug",
+                        "Info",
+                        "Notice",
+                        "Warning",
+                        "Error",
+                        "Critical",
+                        "Alert",
+                        "Emergency"
+                    ],
+                    "name": "sysLogsDataSource-1688419672"
+                }
+            ]
+        },
+        "destinations": {
+            "logAnalytics": [
+                {
+                    "workspaceResourceId": "/subscriptions/03c70407-f5f1-46ef-ae0a-ad11011535b7/resourceGroups/guerra-VmLoggingRg/providers/Microsoft.OperationalInsights/workspaces/guerra-loganws",
+                    "workspaceId": "b6fd31ec-4a4a-4f55-a556-43f639c39749",
+                    "name": "la--77825127"
+                }
+            ]
+        },
+        "dataFlows": [
+            {
+                "streams": [
+                    "Microsoft-Syslog"
+                ],
+                "destinations": [
+                    "la--77825127"
+                ]
+            }
+        ],
+        "provisioningState": "Succeeded"
+    },
+    "location": "eastus",
+    "tags": {},
+    "kind": "Linux",
+    "id": "/subscriptions/03c70407-f5f1-46ef-ae0a-ad11011535b7/resourceGroups/guerra-VmLoggingRg/providers/Microsoft.Insights/dataCollectionRules/manual-rule",
+    "name": "manual-rule",
+    "type": "Microsoft.Insights/dataCollectionRules",
+    "etag": "\"1c009de4-0000-0100-0000-65a83a020000\"",
+    "systemData": {
+        "createdBy": "agu3rra@outlook.com",
+        "createdByType": "User",
+        "createdAt": "2024-01-17T20:35:13.942778Z",
+        "lastModifiedBy": "agu3rra@outlook.com",
+        "lastModifiedByType": "User",
+        "lastModifiedAt": "2024-01-17T20:35:13.942778Z"
+    }
+}

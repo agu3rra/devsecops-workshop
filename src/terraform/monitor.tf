@@ -35,6 +35,7 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
   resource_group_name           = azurerm_resource_group.rg.name
   location                      = azurerm_resource_group.rg.location
   data_collection_endpoint_id   = azurerm_monitor_data_collection_endpoint.linuxdcendpoint.id
+  kind                          = "Linux"
 
   destinations {
     log_analytics {
@@ -53,8 +54,43 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
   data_sources {
     syslog {
       name           = "linux-vm-syslog"
-      facility_names = ["*"]  # all facilities
-      log_levels     = ["Error", "Warning", "Info"]
+      facility_names = [
+        "alert",
+        "audit",
+        "auth",
+        "authpriv",
+        "clock",
+        "cron",
+        "daemon",
+        "ftp",
+        "kern",
+        "local0",
+        "local1",
+        "local2",
+        "local3",
+        "local4",
+        "local5",
+        "local6",
+        "local7",
+        "lpr",
+        "mail",
+        "news",
+        "nopri",
+        "ntp",
+        "syslog",
+        "user",
+        "uucp"
+      ]
+      log_levels     = [
+        "Debug",
+        "Info",
+        "Notice",
+        "Warning",
+        "Error",
+        "Critical",
+        "Alert",
+        "Emergency"
+      ]
       streams        = ["Microsoft-Syslog"]
     }
   }
