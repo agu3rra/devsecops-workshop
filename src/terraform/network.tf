@@ -21,6 +21,14 @@ resource azurerm_subnet "mainsvnet" {
   address_prefixes = ["10.0.1.0/24"]
 }
 
+# Creating a public IP so I can SSH into my VM
+resource "azurerm_public_ip" "publicip" {
+  name                = "${var.prefix}-publicIp"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+}
+
 # Network interface to attach to our subnet
 resource "azurerm_network_interface" "main" {
   name = "${var.prefix}-nic"
@@ -30,6 +38,7 @@ resource "azurerm_network_interface" "main" {
     name = "default-ip-config"
     subnet_id = azurerm_subnet.mainsvnet.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id = azurerm_public_ip.publicip.id
   }
 }
 

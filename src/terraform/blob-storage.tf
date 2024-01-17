@@ -6,6 +6,7 @@ resource "azurerm_storage_account" "logs_storage_account" {
   account_tier = "Standard"
   account_replication_type = "LRS"
   account_kind = "BlobStorage"
+  allow_nested_items_to_be_public = false
 }
 resource "azurerm_storage_container" "logs_storage_container" {
   name = "${var.prefix}logscontainer"

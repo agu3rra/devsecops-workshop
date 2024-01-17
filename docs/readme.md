@@ -1,7 +1,7 @@
 # Execution notes
 
 ## Summary
-<!-- TOC depthTo:4 -->
+<!-- TOC depthto:4 -->
 
 - [Execution notes](#execution-notes)
     - [Summary](#summary)
@@ -18,6 +18,8 @@
             - [Architect for high volume/low volume](#architect-for-high-volumelow-volume)
             - [Upload path semantics](#upload-path-semantics)
             - [Cost estimates](#cost-estimates)
+            - [Terraform Plugin issues](#terraform-plugin-issues)
+            - [Virtual Machine](#virtual-machine)
     - [Challenges & Solutions](#challenges--solutions)
     - [Security](#security)
 
@@ -147,6 +149,83 @@ az vm stop --name guerra-mylinux --resource-group guerra-VmLoggingRg
 az vm deallocate --name guerra-mylinux --resource-group guerra-VmLoggingRg
 ```
 
+##### Enabling VM extension to monitor
+I found the list of available extensions at `az vm extension image list --location=eastus --publisher=Microsoft.Azure.Monitor --output table`. I also found the list of [compatible linux dependency agent versions](https://learn.microsoft.com/en-us/azure/azure-monitor/vm/vminsights-dependency-agent-maintenance#dependency-agent-linux-support), and [compatible AMA linux machines](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/agents-overview#linux), so I reverted to UbuntuServer 18.04 as it checks all the boxes.
+
+Checked that `waagent` is up and running:
+
+![waagent](./assets/waagent-ubuntu-18.04.png)
+
+Checking available extensions on `eastus` that could be interesting...
+```yaml
+- name: AzureMonitorLinuxAgent
+  publisher: Microsoft.Azure.Monitor
+  version: 1.29.4
+```
+
+AMA Extension installed successfully, but missing  Guest Configuration Service (GCS) details. Figuring out which settings to provide is proving to be difficult as the docs in Terraform don't have anything specific for VM logs. I believe if I was using the UI then it'd likely be much easier. Perhaps I can do that and then check the Extensions menu on the VM and copy settings from there to Terraform?
+
+https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-manage?tabs=azure-cli
+https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-data-collection-endpoint?tabs=PowerShellWindows
+
+After deleting the AMA extension in Azure UI and 'terraform apply', it got provisioned successfully. I can't explain why though.
+
+My new idea: Do the provisioning in the UI to have it work. Or via Azure CLI (since the UI doesn't display all available extensions) and SSH into the VM to peek at the config file for `waagent` at `/etc/waagent.conf`. I saved it to [waagent.conf](./inspect/waagent.conf), but it doesn't look like anything I expected. It should have a pointer to my Analytics Workspace somewhere. I'll try again using `az cli` to provision and inspect the same file again:
+
+```bash
+az vm extension set --name AzureMonitorLinuxAgent --publisher Microsoft.Azure.Monitor --ids <vm-resource-id> --enable-auto-upgrade true
+```
+
+It also worked, but the config file looks exactly the same. Perhaps I need to configure data collection points after even enabling them as the Azure Portal config does not seem to populate anything on Analytics Workspace either. Looking at the data collection UI, I see I have no data collection endpoints available yet, so perhaps this is what I need to enable next.
+
+![ama-enabled](./assets/ama-enabled.png)
+
+I couldn't find the workspace id anywhere in `az vm extension show --resource-group guerra-VmLoggingRg --vm-name guerra-mylinux --name AzureMonitorLinuxAgent`. I wonder if it would appear if I had used my terraform script that provides it to the extension. It does!
+
+```json
+{
+  "autoUpgradeMinorVersion": false,
+  "enableAutomaticUpgrade": false,
+  "forceUpdateTag": null,
+  "id": "/subscriptions/03c70407-f5f1-46ef-ae0a-ad11011535b7/resourceGroups/guerra-VmLoggingRg/providers/Microsoft.Compute/virtualMachines/guerra-mylinux/extensions/AzureMonitorLinuxAgent",
+  "instanceView": null,
+  "location": "eastus",
+  "name": "AzureMonitorLinuxAgent",
+  "protectedSettings": null,
+  "protectedSettingsFromKeyVault": null,
+  "provisionAfterExtensions": null,
+  "provisioningState": "Succeeded",
+  "publisher": "Microsoft.Azure.Monitor",
+  "resourceGroup": "guerra-VmLoggingRg",
+  "settings": {
+    "workspaceId": "f4a01be1-2c31-422b-bbef-78e86da34134",
+    "workspaceKey": "REDACTED"
+  },
+  "suppressFailures": false,
+  "tags": {},
+  "type": "Microsoft.Compute/virtualMachines/extensions",
+  "typeHandlerVersion": "1.29",
+  "typePropertiesType": "AzureMonitorLinuxAgent"
+}
+```
+
+#### Data collection rules
+It seems that this is the next element we need to terraform: [monitor_data_collection_rule](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_data_collection_rule).
+
+Ok, I setup collection rules and streams/destinations, but still see no logs flowing despite having included even INFO like events. I also see no Linux Agents on my Analytics Workspace. I see it has instructions to setup data collection rules, but that's already created. I am thinking this is an issue with the agent not having access to send the data where we need.
+
+Maybe try to install AMA extension on the VM via a Custom Script? The Terraform docs show how to execute a custom script and the Azure docs show how to install the AMA extension.
+
+```
+UPDATE: I am thinking my VM can't read the Azure Monitor endpoints due to the NSG rules:
+global.handler.control.monitor.azure.com
+<virtual-machine-region-name>.handler.control.monitor.azure.com (example: westus.handler.control.monitor.azure.com)
+<log-analytics-workspace-id>.ods.opinsights.azure.com (example: 12345a01-b1cd-1234-e1f2-1234567g8h99.ods.opinsights.azure.com)
+(If you use private links on the agent, you must also add the dce endpoints).
+```
+
+Next step: verify if the system assigned account to the data collection setup is failing us. Work with an user defined one.
+
 > More soon...
 
 ## Challenges & Solutions
@@ -160,6 +239,19 @@ az vm deallocate --name guerra-mylinux --resource-group guerra-VmLoggingRg
 1. How can I detect if the VM was shutdown and logs are no longer flowing?
 1. How does an Azure Function receive input?
 1. Issue with Terraform latest `azurerm` plugin. ANS.: Using version 3.55.0. It's been quite tedious to quickly change provider version. I can't explain why newer versions fail to be able to register with Azure. One can disable registration, but I just avoided doing that as it seems it can mess up my Azure thingy.
+1. Difficulty enabling the VM extension required to attach VM to Azure Analytics Workspace. ANS.: further reading into Azure Monitoring Agent docs and enablement of public IP to VM to be able to SSH into it.
+1. Blob storage in Azure allowed `anonymous` access when visiting the Portal UI despite the fact I had explictly set it to `private` mode. I found this setting had been overriden by the storage account config. That fixed the issue.
+
+## Insights
+- Network Security Groups used from the get go in Azure grant you default security settings. E.g.: I wasn't able to SSH into my VM even after I exposed it via a publicly accessible IP address. Only by adding my local PC to the list of security rules, I was able to do that.
+- running `grep . /sys/devices/system/cpu/vulnerabilities/*` will give me an output of vulnerable vs. mitigated OS level vulnerabilities. I wonder if these would show in Azure Security Monitor somewhere.
+- For some reason I was only able to install AMA on Azure when providing major and minor version of the extension (e.g.: 1.29 instead of 1.29.4).
+- Terraform is great, but the way it works it allows a lot of configuration parameters to be ommited which causes them to be set to default values within Azure. I understand this adds a lot of flexibility, but then we have an incomplete picture of what a resource looks like when reviwing the corresponding terraform file that provisioned it.
+
+## To do's:
+- TODO: [Docs on storage accounts](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) indicate that we can apply `network_rules` to allow list specific public IP's.
+- TODO: public_network_access_enabled = true revisit this for `azurerm_monitor_data_collection_endpoint`.
+- TODO: potential failure: f4a01be1-2c31-422b-bbef-78e86da34134.ods.opinsights.azure.com is not pinging even after NSG update.
 
 ## Security
 - restrict VNET access via NSG.
