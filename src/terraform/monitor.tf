@@ -23,11 +23,6 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
       workspace_resource_id = azurerm_log_analytics_workspace.loganws.id
       name                  = "destination-log-ws-analytics"
     }
-    storage_blob {
-      name               = "destination-storage-blob"
-      storage_account_id = azurerm_storage_account.logs_storage_account.id
-      container_name     = azurerm_storage_container.logs_storage_container.name
-    }
   }
 
   # additional info and values at https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_data_collection_rule#syslog
@@ -39,9 +34,6 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
         "audit",
         "auth",
         "authpriv",
-        "clock",
-        "cron",
-        "daemon",
         "ftp",
         "kern",
         "local0",
@@ -53,17 +45,12 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
         "local6",
         "local7",
         "lpr",
-        "mail",
-        "news",
         "nopri",
         "ntp",
         "syslog",
-        "user",
-        "uucp"
+        "user"
       ]
       log_levels     = [
-        "Debug",
-        "Info",
         "Notice",
         "Warning",
         "Error",
@@ -78,8 +65,7 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
   data_flow {
     streams = ["Microsoft-Syslog"]
     destinations = [
-      "destination-log-ws-analytics",
-      "destination-storage-blob"
+      "destination-log-ws-analytics"
     ]
   }
 }
@@ -120,9 +106,6 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule2" {
         "audit",
         "auth",
         "authpriv",
-        "clock",
-        "cron",
-        "daemon",
         "ftp",
         "kern",
         "local0",
@@ -134,17 +117,12 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule2" {
         "local6",
         "local7",
         "lpr",
-        "mail",
-        "news",
         "nopri",
         "ntp",
         "syslog",
-        "user",
-        "uucp"
+        "user"
       ]
       log_levels     = [
-        "Debug",
-        "Info",
         "Notice",
         "Warning",
         "Error",
