@@ -16,7 +16,6 @@
             - [Which infra region to select](#which-infra-region-to-select)
             - [Estimating solution cost](#estimating-solution-cost)
             - [Architect for high volume/low volume](#architect-for-high-volumelow-volume)
-            - [Upload path semantics](#upload-path-semantics)
             - [Cost estimates](#cost-estimates)
             - [Terraform Plugin issues](#terraform-plugin-issues)
             - [Virtual Machine](#virtual-machine)
@@ -26,7 +25,6 @@
             - [Reading the Blobs](#reading-the-blobs)
     - [Challenges & Solutions](#challenges--solutions)
     - [Insights](#insights)
-    - [To do's:](#to-dos)
     - [Security](#security)
 
 <!-- /TOC -->
@@ -166,12 +164,6 @@ I'll consider this one particular scenario is low volume, so I'll not use Azure 
 Looking at the overall architecture and for the purpose of the exercise, I believe this would make it easier to simply attach new VM's to Azure Monitor.
 Azure Function's sole purpose is log writing without having to worry how the events got there.
 I could of course, simply write a piece of code that reads and parses code straight from the VM, but that'd probably be harder to maintain/deploy.
-
-#### Upload path semantics
-In order to make it easier to identify and filter in Azure Blob Storage, what is the VM that logged a particular blob, we'll use the following upload path:
-> `<bucket-id>/<resource-group>/<vm-identifier>/somelogfile.log`
-
-PS: The Azure Subscription ID is not considered necessary as the solution itself is assumed to live within the boundaries of a single subscription and resource group. If that changes then we need to adapt 😉.
 
 #### Cost estimates
 Using [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/):
@@ -337,19 +329,19 @@ I have to determine whether I will use Databricks to display the blobs OR I will
 > More soon...
 
 ## Challenges & Solutions
-1. How to generate `WARNING/ERROR` type logs in case everything goes smoother than usual.
-1. Latency: how frequent do we trigger log retrieval? Pooling or event-based? **ANS.:** The architecture using Azure Monitor and Event Grid makes it event-based. Event-Grid triggers a call to the Azure Function that effectively logs an entry to Azure Blob Storage.
-1. How to ensure we don't send a gargantuan amount of logs to blobs, so I don't have to sell my kidney to pay for it. 😅
-1. Do we write a pipeline that does `terraform apply` upon receiving updates on this repo? ANS.: Perhaps it will be a bit messy integrating SAP's Github.tools to AzureDevOps? Let's try local Terraform only.
-1. Define upload path semantics. ANS.: done [here](#upload-path-semantics).
-1. What happens if they ask me to start sending logs from a new VM? Can I have it so, I can simply append the new VM in the list and magic happens? Upload paths should allow VM identification for effective blob retrieval.
-1. Encoding of logs before sending so they don't get messed up because of special formatting.
+1. How to generate `WARNING/ERROR` type logs in case everything goes smoother than usual. [Ans.](#generating-a-log-entry-for-testing)
+1. Latency: how frequent do we trigger log retrieval? Pooling or event-based? **ANS.:** This is transparent to us via Azure Monitor and Data Collections in Azure.
+1. How to ensure we don't send a gargantuan amount of logs to blobs, so I don't have to sell my kidney to pay for it. 😅 ANS.: Data collection rules allow fine grained filtering of logs.
+1. Do we write a pipeline that does `terraform apply` upon receiving updates on this repo? **ANS.:** Perhaps it will be a bit messy integrating SAP's Github.tools to AzureDevOps? Let's try local Terraform only.
+1. Define upload path semantics. **ANS.:** done by the data collection redirection rule.
+1. What happens if they ask me to start sending logs from a new VM? **ANS.:** we can add an Azure Monitor Agent to the VM as an extension and create a new data collection rule to forward them to the existing Blob storage and Log Analytics Workspace.
+1. Encoding of logs before sending so they don't get messed up because of special formatting. **ANS.:** automatically done for us.
 1. How can I detect if the VM was shutdown and logs are no longer flowing?
-1. How does an Azure Function receive input?
-1. Issue with Terraform latest `azurerm` plugin. ANS.: Using version 3.55.0. It's been quite tedious to quickly change provider version. I can't explain why newer versions fail to be able to register with Azure. One can disable registration, but I just avoided doing that as it seems it can mess up my Azure thingy.
-1. Difficulty enabling the VM extension required to attach VM to Azure Analytics Workspace. ANS.: further reading into Azure Monitoring Agent docs and enablement of public IP to VM to be able to SSH into it.
-1. Blob storage in Azure allowed `anonymous` access when visiting the Portal UI despite the fact I had explictly set it to `private` mode. I found this setting had been overriden by the storage account config. That fixed the issue.
-1. ~~Bumps on the road found between `Standard` and `Premium` features in Azure resources. E.g.: vault role assignment for managed identities.~~. I was looking at the wrong menu (Azure Portal UI can be deceiving).
+1. ~~How does an Azure Function receive input?~~ **ANS.:** I saw that, but it's not important anymore since we got it working without one.
+1. Issue with Terraform latest `azurerm` plugin. **ANS.:** Using version 3.55.0 on macOS worked. It's been quite tedious to quickly change provider version. I can't explain why newer versions fail to be able to register with Azure. It was eventually leading me to all sorts of issues given how old it was. I switched to completing the exercise using WSL on my home PC since I had no issues using the latest plugin versions there.
+1. Difficulty enabling the VM extension required to attach VM to Azure Analytics Workspace. **ANS.:** further reading into Azure Monitoring Agent docs and enablement of public IP to VM to be able to SSH into it.
+1. Blob storage in Azure allowed `anonymous` access when visiting the Portal UI despite the fact I had explictly set it to `private` mode. **ANS.:** I found this setting had been overriden by the storage account config. That fixed the issue.
+1. ~~Bumps on the road found between `Standard` and `Premium` features in Azure resources. E.g.: vault role assignment for managed identities.~~. **ANS.:** I was looking at the wrong menu (Azure Portal UI can be deceiving).
 
 ## Insights
 - Network Security Groups used from the get go in Azure grant you default security settings. E.g.: I wasn't able to SSH into my VM even after I exposed it via a publicly accessible IP address. Only by adding my local PC to the list of security rules, I was able to do that.
@@ -359,9 +351,6 @@ I have to determine whether I will use Databricks to display the blobs OR I will
 - One can SSH into a VM and access to log type files listed at [MS data-collection-syslog](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/data-collection-syslog).
 - I found situations where a resource association, prevented one from being updated in Terraform, because the update was an actual destroy/re-create. Perhaps settings dependencies in Terraform fix this type of issue. Same TF scripts, cause different output depending on system state. I don't like this much. I like stateless determinism.
 - Azure Active Directory has been rebranded to *Azure Extra ID*.
-
-## To do's:
-- TODO: public_network_access_enabled = true revisit this for `azurerm_monitor_data_collection_endpoint`.
 
 ## Security
 - restrict VNET access via NSG.

@@ -7,22 +7,11 @@ resource "azurerm_log_analytics_workspace" "loganws" {
     retention_in_days   = 30
 }
 
-# Data Collection endpoint
-resource "azurerm_monitor_data_collection_endpoint" "linuxdcendpoint" {
-  name                          = "linuxvm-data-collection-endpoint"
-  resource_group_name           = azurerm_resource_group.rg.name
-  location                      = azurerm_resource_group.rg.location
-  kind                          = "Linux"
-  public_network_access_enabled = true
-  description                   = "Collection endpoint for our first VM"
-}
-
 # Log collection rule: forwarding to Analytics Workspace
 resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
   name = "linuxvm-collection-rule-loganws"
   resource_group_name           = azurerm_resource_group.rg.name
   location                      = azurerm_resource_group.rg.location
-  data_collection_endpoint_id   = azurerm_monitor_data_collection_endpoint.linuxdcendpoint.id
   kind                          = "Linux"
   identity {
     type = "UserAssigned"
