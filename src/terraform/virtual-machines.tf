@@ -24,4 +24,9 @@ resource "azurerm_linux_virtual_machine" "mylinux" {
     sku = "18.04-LTS"
     version = "latest"
   }
+
+  identity {
+    type = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.aksuid.id]
+  }
 }

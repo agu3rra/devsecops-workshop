@@ -14,11 +14,18 @@ resource "azurerm_virtual_machine_extension" "ama" {
   type_handler_version = "1.29"
 
   settings = <<SETTINGS
-    {
-        "workspaceId": "${azurerm_log_analytics_workspace.loganws.workspace_id}",
-        "workspaceKey": "${azurerm_log_analytics_workspace.loganws.primary_shared_key}"
-    }
-SETTINGS
+  {
+      "workspaceId": "${azurerm_log_analytics_workspace.loganws.workspace_id}",
+      "workspaceKey": "${azurerm_log_analytics_workspace.loganws.primary_shared_key}",
+      "authentication": {
+        "managedIdentity": {
+          "identifier-type": "mi_res_id",
+          "identifier-name": "mi_res_id",
+          "identifier-value": "${azurerm_user_assigned_identity.aksuid.name}"
+        }
+      }
+  }
+  SETTINGS
 }
 
 resource "azurerm_monitor_data_collection_endpoint" "linuxdcendpoint" {
@@ -36,6 +43,10 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
   location                      = azurerm_resource_group.rg.location
   data_collection_endpoint_id   = azurerm_monitor_data_collection_endpoint.linuxdcendpoint.id
   kind                          = "Linux"
+  identity {
+    type = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.aksuid.id]
+  }
 
   destinations {
     log_analytics {

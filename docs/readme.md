@@ -20,7 +20,11 @@
             - [Cost estimates](#cost-estimates)
             - [Terraform Plugin issues](#terraform-plugin-issues)
             - [Virtual Machine](#virtual-machine)
+            - [Data collection rules](#data-collection-rules)
+            - [Moving logs from Azure Log Analytics Workspace](#moving-logs-from-azure-log-analytics-workspace)
     - [Challenges & Solutions](#challenges--solutions)
+    - [Insights](#insights)
+    - [To do's:](#to-dos)
     - [Security](#security)
 
 <!-- /TOC -->
@@ -224,11 +228,39 @@ global.handler.control.monitor.azure.com
 (If you use private links on the agent, you must also add the dce endpoints).
 ```
 
-Next step: verify if the system assigned account to the data collection setup is failing us. Work with an user defined one.
+Next step: verify if the system assigned account to the data collection setup is failing us.
+Work with an user defined one.
 
-PS: The manual rule I created following [this doc](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/data-collection-syslog#configure-syslog-on-the-linux-agent) looks exactly like the rule I created via Terraform. The tutorial does mention a 20 minute wait until some action is perceived, so I'll leave the VM running overnight. I saw no Linux Agents detected in Azure Portal.
+PS: The manual rule I created following [this doc](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/data-collection-syslog#configure-syslog-on-the-linux-agent) looks exactly like the rule I created via Terraform.
+The tutorial does mention a 20 minute wait until some action is perceived, so I'll leave the VM running overnight.
+I saw no Linux Agents detected in Azure Portal.
 
-**JACKPOT!**: I was missing the linux kind on my Terraform script. Perhaps it's what was keeping my AMA logs from showing up. That and the network rules of course! I matched facility names and log levels as the working log to make sure I can now Terraform this stuff. 🤞
+**JACKPOT!**: I was missing the linux kind on my Terraform script.
+Perhaps it's what was keeping my AMA logs from showing up.
+That and the network rules of course! I matched facility names and log levels as the working log to make sure I can now Terraform this stuff. 🤞
+
+#### Moving logs from Azure Log Analytics Workspace
+I'll try to have my data collection rule forward the syslogs I've already seen flowing into Log Analytics Workspace (LAW) into Azure Blob Storage (ABS) directly.
+I see in the [monitor_data_collection_rule#identity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_data_collection_rule#identity) section of `azurerm` docs that an identity attribute is supported there and the value can be both of `type` `SystemAssigned` and `UserAssigned`.
+Maybe I'll configure an exclusive rule for sending logs to ABS so that the currently working rule forwarding them to LAW doesn't get messed up or confused about having to use an identity.
+
+So Data Collections seem to support System and User Assigned identity types, but both are flavors of managed identities.
+Does it support a service principal?
+Can we get vault to be accessed via a managed identity instead of a service principal?
+It is not listed at [MS docs](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/managed-identities-status) as supported, but neither is a data collection, so let's assume that it is possible for a moment.
+
+💡Use the user-assigned managed account and tie it to the storage account; Then we may not need to use Vault for the data collection. As we can say data collection uses that same user-account which will have access to storage and we are able to forward our logs! AFTER LUNCH!
+
+Ok, I was able to assign the user-assigned managed account to the storage account and also to the data collection rule. I saw them reflected in Azure UI. I'll wait for some time until I can see logs in there. If this worked then I can create a service principal to use with the CLI app I intent to demonstrate has blob listing capabilities.
+
+I'll reboot the VM to see if that gets any logs flowing. I see very little activity in Log Analytics.
+
+Reading doc on how to [send AMA logs to event hub or storage](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-send-data-to-event-hubs-and-storage?tabs=linux%2Cwindows-1).
+[This](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-send-data-to-event-hubs-and-storage?tabs=linux%2Cwindows-1#whats-supported) tells me that both Event Hub and Storage are supported.
+[Pre-requisites](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-send-data-to-event-hubs-and-storage?tabs=linux%2Cwindows-1#prerequisites) indicate I am missing an association of the `user-assigned` account to the VM.
+[This](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-send-data-to-event-hubs-and-storage?tabs=linux%2Cwindows-1#create-dcr-association-and-deploy-azure-monitor-agent) indicates AMA settings I need to add in order to have AMA use the associated user-assigned id.
+
+Intersting. [log_analytics_linked_storage_account](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_linked_storage_account) indicates it can be possible to integrate log analytics with storage directly. Perhaps I will need this.
 
 > More soon...
 
@@ -245,18 +277,21 @@ PS: The manual rule I created following [this doc](https://learn.microsoft.com/e
 1. Issue with Terraform latest `azurerm` plugin. ANS.: Using version 3.55.0. It's been quite tedious to quickly change provider version. I can't explain why newer versions fail to be able to register with Azure. One can disable registration, but I just avoided doing that as it seems it can mess up my Azure thingy.
 1. Difficulty enabling the VM extension required to attach VM to Azure Analytics Workspace. ANS.: further reading into Azure Monitoring Agent docs and enablement of public IP to VM to be able to SSH into it.
 1. Blob storage in Azure allowed `anonymous` access when visiting the Portal UI despite the fact I had explictly set it to `private` mode. I found this setting had been overriden by the storage account config. That fixed the issue.
+1. ~~Bumps on the road found between `Standard` and `Premium` features in Azure resources. E.g.: vault role assignment for managed identities.~~. I was looking at the wrong menu (Azure Portal UI can be deceiving).
 
 ## Insights
 - Network Security Groups used from the get go in Azure grant you default security settings. E.g.: I wasn't able to SSH into my VM even after I exposed it via a publicly accessible IP address. Only by adding my local PC to the list of security rules, I was able to do that.
 - running `grep . /sys/devices/system/cpu/vulnerabilities/*` will give me an output of vulnerable vs. mitigated OS level vulnerabilities. I wonder if these would show in Azure Security Monitor somewhere.
 - For some reason I was only able to install AMA on Azure when providing major and minor version of the extension (e.g.: 1.29 instead of 1.29.4).
 - Terraform is great, but the way it works it allows a lot of configuration parameters to be ommited which causes them to be set to default values within Azure. I understand this adds a lot of flexibility, but then we have an incomplete picture of what a resource looks like when reviwing the corresponding terraform file that provisioned it.
+- One can SSH into a VM and access to log type files listed at [MS data-collection-syslog](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/data-collection-syslog).
 
 ## To do's:
 - TODO: [Docs on storage accounts](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) indicate that we can apply `network_rules` to allow list specific public IP's.
 - TODO: public_network_access_enabled = true revisit this for `azurerm_monitor_data_collection_endpoint`.
 - TODO: potential failure: f4a01be1-2c31-422b-bbef-78e86da34134.ods.opinsights.azure.com is not pinging even after NSG update.
 - TODO: Use service tags to update NSG rules that allow the VM to talk to Azure Monitor as [here](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-data-collection-endpoint).
+- TODO: how frequent is the data collection service sending data to its services?
 
 ## Security
 - restrict VNET access via NSG.
