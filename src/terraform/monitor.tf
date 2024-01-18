@@ -200,19 +200,3 @@ resource "azurerm_monitor_data_collection_rule_association" "datacolvm1blobs" {
   data_collection_rule_id = azurerm_monitor_data_collection_rule.logcollectionrule2.id
   description             = "Associates the collection rule for our first VM for Blob type destinations"
 }
-
-# # a diagnostic setting
-# resource "azurerm_monitor_diagnostic_setting" "diagnosticsetting" {
-#   name                       = "diagnostic-setting"
-#   target_resource_id         = azurerm_linux_virtual_machine.mylinux.id
-#   log_analytics_workspace_id = azurerm_log_analytics_workspace.loganws.id
-#   storage_account_id         = azurerm_storage_account.logs_storage_account.id
-
-#   metric {
-#     category = "AllMetrics"
-
-#     retention_policy {
-#       enabled = false
-#     }
-#   }
-# }

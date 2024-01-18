@@ -1,7 +1,7 @@
 # Gets my current az cli user context when runnign terraform locally
 data "azurerm_client_config" "current" {}
 
-# Creating an user-assigned managed identity for Key Vault
+# Creating an user-assigned managed identity for everything
 resource "azurerm_user_assigned_identity" "aksuid" {
   location            = azurerm_resource_group.rg.location
   name                = "akv-ua-id"
@@ -44,13 +44,3 @@ resource "azurerm_key_vault_access_policy" "akvpolicyuaid" {
     "Get", "List", "Set", "Purge"
   ]
 }
-
-# # A managed account for our blob storage
-# resource "azurerm_key_vault_managed_storage_account" "avkmsa" {
-#   name                         = "${var.prefix}AkvStorageAccount"
-#   key_vault_id                 = azurerm_key_vault.akv.id
-#   storage_account_id           = azurerm_storage_account.logs_storage_account.id
-#   storage_account_key          = "key1"
-#   regenerate_key_automatically = true
-#   regeneration_period          = "P7D"
-# }
