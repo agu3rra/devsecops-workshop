@@ -272,20 +272,28 @@ logger -p local0.warn "Issuing a test warning message."
 #### Reading the Blobs
 I have to determine whether I will use Databricks to display the blobs OR I will simply use a service principal and provide a client CLI to obtain and view the log contents.
 
-My plan is to create a service principal which will be associated with my CLI application (`mbtool` - my blob tool).
+My plan is to create a service principal which will be associated with my CLI application (`mbt` - my blob tool).
 I then need to ensure that service principal account has read access to the blobs and we'll do this via... yes, Terraform.
 I'll then use the [azure-sdk-for-python](https://github.com/Azure/azure-sdk-for-python) and [python click](https://click.palletsprojects.com/en/8.1.x/) to create a CLI that does the following:
 
 ```bash
+# asks user input for configuring blob access
+mbt init
+
 # lists available blobs
-mbtool list
+mbt list
 
 # list and filter to see only blobs that contain the text filter on their path; option to -d for downloading them all to a folder
-mbtool list -f <text-filter> -d /tmp
+mbt list -f <text-filter> -d /tmp
 
 # view the contents of a specific blob
-mbtool view <blob-path>
+mbt view <blob-path>
 ```
+
+I cheated and did some role assignment in Azure for my AZ CLI service principal.
+Terraform was otherwise not able to assign me the blob storage read access also because of an apparent access issue.
+So I cheated twice and granted myself access to it via the Azure Portal menu and generated a secret ID via App registrations.
+Now I have access to the blob and the client id/secret to use OAuth flows to access the blob storage.
 
 > More soon...
 
