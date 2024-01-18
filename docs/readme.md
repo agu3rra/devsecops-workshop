@@ -29,60 +29,6 @@
 
 <!-- /TOC -->
 
-- [Execution notes](#execution-notes)
-    - [Summary](#summary)
-    - [Project Overview](#project-overview)
-    - [Expected outcomes](#expected-outcomes)
-    - [Execution plan](#execution-plan)
-    - [Technical details](#technical-details)
-        - [Solution diagram](#solution-diagram)
-        - [Execution](#execution)
-            - [Getting my Azure account](#getting-my-azure-account)
-            - [Local environment setup](#local-environment-setup)
-            - [Which infra region to select](#which-infra-region-to-select)
-            - [Estimating solution cost](#estimating-solution-cost)
-            - [Architect for high volume/low volume](#architect-for-high-volumelow-volume)
-            - [Upload path semantics](#upload-path-semantics)
-<!-- TOC depthto:4 depthto:4 -->
-
-- [Execution notes](#execution-notes)
-    - [Summary](#summary)
-    - [Project Overview](#project-overview)
-    - [Expected outcomes](#expected-outcomes)
-    - [Execution plan](#execution-plan)
-    - [Technical details](#technical-details)
-        - [Solution diagram](#solution-diagram)
-        - [Execution](#execution)
-            - [Getting my Azure account](#getting-my-azure-account)
-            - [Local environment setup](#local-environment-setup)
-            - [Which infra region to select](#which-infra-region-to-select)
-            - [Estimating solution cost](#estimating-solution-cost)
-            - [Architect for high volume/low volume](#architect-for-high-volumelow-volume)
-            - [Upload path semantics](#upload-path-semantics)
-            - [Cost estimates](#cost-estimates)
-            - [Terraform Plugin issues](#terraform-plugin-issues)
-            - [Virtual Machine](#virtual-machine)
-            - [Data collection rules](#data-collection-rules)
-            - [Moving logs into Blob Storage](#moving-logs-into-blob-storage)
-            - [Generating a log entry for testing](#generating-a-log-entry-for-testing)
-            - [Reading the Blobs](#reading-the-blobs)
-    - [Challenges & Solutions](#challenges--solutions)
-    - [Insights](#insights)
-    - [To do's:](#to-dos)
-    - [Security](#security)
-
-<!-- /TOC -->            - [Cost estimates](#cost-estimates)
-            - [Terraform Plugin issues](#terraform-plugin-issues)
-            - [Virtual Machine](#virtual-machine)
-            - [Data collection rules](#data-collection-rules)
-            - [Moving logs from Azure Log Analytics Workspace](#moving-logs-from-azure-log-analytics-workspace)
-    - [Challenges & Solutions](#challenges--solutions)
-    - [Insights](#insights)
-    - [To do's:](#to-dos)
-    - [Security](#security)
-
-<!-- /TOC -->
-
 ## Project Overview
 The goal of this project is to evaluate my solution building skills while having fun at it.
 Displaying thoroughness and innovation as well as cost and security impacts is also one of the key deliverables.
