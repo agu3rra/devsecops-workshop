@@ -1,7 +1,34 @@
 # Execution notes
 
 ## Summary
-<!-- TOC depthto:4 -->
+<!-- TOC depthto:4 depthto:4 -->
+
+- [Execution notes](#execution-notes)
+    - [Summary](#summary)
+    - [Project Overview](#project-overview)
+    - [Expected outcomes](#expected-outcomes)
+    - [Execution plan](#execution-plan)
+    - [Technical details](#technical-details)
+        - [Solution diagram](#solution-diagram)
+        - [Execution](#execution)
+            - [Getting my Azure account](#getting-my-azure-account)
+            - [Local environment setup](#local-environment-setup)
+            - [Which infra region to select](#which-infra-region-to-select)
+            - [Estimating solution cost](#estimating-solution-cost)
+            - [Architect for high volume/low volume](#architect-for-high-volumelow-volume)
+            - [Upload path semantics](#upload-path-semantics)
+            - [Cost estimates](#cost-estimates)
+            - [Terraform Plugin issues](#terraform-plugin-issues)
+            - [Virtual Machine](#virtual-machine)
+            - [Data collection rules](#data-collection-rules)
+            - [Moving logs into Blob Storage](#moving-logs-into-blob-storage)
+            - [Reading the Blobs](#reading-the-blobs)
+    - [Challenges & Solutions](#challenges--solutions)
+    - [Insights](#insights)
+    - [To do's:](#to-dos)
+    - [Security](#security)
+
+<!-- /TOC -->
 
 - [Execution notes](#execution-notes)
     - [Summary](#summary)
@@ -33,13 +60,6 @@
 The goal of this project is to evaluate my solution building skills while having fun at it.
 Displaying thoroughness and innovation as well as cost and security impacts is also one of the key deliverables.
 
-We'll use [Terraform](https://www.terraform.io/) to automate the deployment of the following resources in [Azure](https://portal.azure.com/#home):
-- [ ] VNET (incl. Network Security Group)
-- [ ] VM within that VNET
-- [ ] Azure Blob Storage (ABS)
-- [ ] Azure key vault (AKV)
-- [ ] Azure function (AF)
-
 VM logs are to be retrieved via the created Azure function (running on the same VNET ought to do it), then the key to access Azure blob storage is to be retrieved using Azure key vault then simply send these logs (WARNING and ERROR only) to Azure Blob Storage.
 
 ## Expected outcomes
@@ -53,8 +73,8 @@ VM logs are to be retrieved via the created Azure function (running on the same 
 - [x] local setup. [detailed task](#local-environment-setup). Tested with Terraform for creating/destroying resource group in Azure.
 - [x] define upload path semantics to ABS.
 - [x] cost estimate calculations for the proposed solution (top it at 200 USD)
-- [ ] refer to [Terraform azurerm docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs), so understand the input I need to provide to my Terraform script. Perhaps visit some of the resources in the Azure Portal UI to see if I get any additional contextual info that can help me decide how to configure each resource.
-- [ ] see what I can get out of Azure function. I am guessing I can drag drop my way there to do fun stuff for me.
+- [x] refer to [Terraform azurerm docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs), so understand the input I need to provide to my Terraform script. Perhaps visit some of the resources in the Azure Portal UI to see if I get any additional contextual info that can help me decide how to configure each resource.
+- [ ] ~~see what I can get out of Azure function. I am guessing I can drag drop my way there to do fun stuff for me.~~ Managed to get the logs into Blob storage without using an Azure function.
 - [ ] note down challenges and solutions as I progress.
 - [ ] do blob reading to local terminal.
 - [ ] create slide deck.
@@ -239,7 +259,7 @@ I saw no Linux Agents detected in Azure Portal.
 Perhaps it's what was keeping my AMA logs from showing up.
 That and the network rules of course! I matched facility names and log levels as the working log to make sure I can now Terraform this stuff. 🤞
 
-#### Moving logs from Azure Log Analytics Workspace
+#### Moving logs into Blob Storage
 I'll try to have my data collection rule forward the syslogs I've already seen flowing into Log Analytics Workspace (LAW) into Azure Blob Storage (ABS) directly.
 I see in the [monitor_data_collection_rule#identity](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_data_collection_rule#identity) section of `azurerm` docs that an identity attribute is supported there and the value can be both of `type` `SystemAssigned` and `UserAssigned`.
 Maybe I'll configure an exclusive rule for sending logs to ABS so that the currently working rule forwarding them to LAW doesn't get messed up or confused about having to use an identity.
@@ -261,6 +281,21 @@ Reading doc on how to [send AMA logs to event hub or storage](https://learn.micr
 [This](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-send-data-to-event-hubs-and-storage?tabs=linux%2Cwindows-1#create-dcr-association-and-deploy-azure-monitor-agent) indicates AMA settings I need to add in order to have AMA use the associated user-assigned id.
 
 Intersting. [log_analytics_linked_storage_account](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_linked_storage_account) indicates it can be possible to integrate log analytics with storage directly. Perhaps I will need this.
+
+**EUREKA!** Following the MS Docs above was really key.
+I now see logs being moved to Azure Blob Storage.
+Turns out I needed a different `kind` of data collection on top of all the role assignments I did for the Azure managed user account I created.
+I have no use for Key Vault necessarily since I am using an Azure managed creadential all over the place.
+As soon as I noticed the log on Log Analytics, it was also available in Blob storage (within 4 minutes as I refreshed the page).
+Are they going there as soon as they are generated?
+So in the end we're left with:
+
+VM >> generates logs >> collected by AMA VM extension with assigned user account << Data collection rule >> Blob storage.
+
+Cherry on top: Azure is handling a really grannular upload semantics for me.
+
+#### Reading the Blobs
+I have to determine whether I will use Databricks to display the blobs OR I will simply use a service principal and provide a client CLI to obtain and view the log contents.
 
 > More soon...
 
@@ -285,6 +320,8 @@ Intersting. [log_analytics_linked_storage_account](https://registry.terraform.io
 - For some reason I was only able to install AMA on Azure when providing major and minor version of the extension (e.g.: 1.29 instead of 1.29.4).
 - Terraform is great, but the way it works it allows a lot of configuration parameters to be ommited which causes them to be set to default values within Azure. I understand this adds a lot of flexibility, but then we have an incomplete picture of what a resource looks like when reviwing the corresponding terraform file that provisioned it.
 - One can SSH into a VM and access to log type files listed at [MS data-collection-syslog](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/data-collection-syslog).
+- I found situations where a resource association, prevented one from being updated in Terraform, because the update was an actual destroy/re-create. Perhaps settings dependencies in Terraform fix this type of issue. Same TF scripts, cause different output depending on system state. I don't like this much. I like stateless determinism.
+- Azure Active Directory has been rebranded to *Azure Extra ID*.
 
 ## To do's:
 - TODO: [Docs on storage accounts](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) indicate that we can apply `network_rules` to allow list specific public IP's.
@@ -295,4 +332,4 @@ Intersting. [log_analytics_linked_storage_account](https://registry.terraform.io
 
 ## Security
 - restrict VNET access via NSG.
-- setup AKV in a way that we use the secret to access it in a secure fashion. I remember something like being able to have Azure recognize an app instead of using the likes of a private key or secret-based authentication.
+- VM logs and their forwarding to different Azure services is being carried out without any actual passwords. I used Azure managed user-assigned identities and their access control is explictly controlled in Terraform.
