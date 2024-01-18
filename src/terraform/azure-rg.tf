@@ -24,10 +24,9 @@ resource "azurerm_resource_group" "rg" {
   location = "East US"
 }
 
-# Azure Monitor
-
-# Azure Event Grid
-
-# Resource Azure Key Vault
-
-# Resource Azure Function (pay per call)
+# Creating an user-assigned managed identity for everything
+resource "azurerm_user_assigned_identity" "aksuid" {
+  location            = azurerm_resource_group.rg.location
+  name                = "akv-ua-id"
+  resource_group_name = azurerm_resource_group.rg.name
+}

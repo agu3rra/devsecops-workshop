@@ -30,3 +30,26 @@ resource "azurerm_linux_virtual_machine" "mylinux" {
     identity_ids = [azurerm_user_assigned_identity.aksuid.id]
   }
 }
+
+# Azure Monitoring Agent install in the VM. Easy log forwarding.
+resource "azurerm_virtual_machine_extension" "ama" {
+  name                 = "AzureMonitorLinuxAgent"
+  virtual_machine_id   = azurerm_linux_virtual_machine.mylinux.id
+  publisher            = "Microsoft.Azure.Monitor"
+  type                 = "AzureMonitorLinuxAgent"
+  type_handler_version = "1.29"
+
+  settings = <<SETTINGS
+  {
+      "workspaceId": "${azurerm_log_analytics_workspace.loganws.workspace_id}",
+      "workspaceKey": "${azurerm_log_analytics_workspace.loganws.primary_shared_key}",
+      "authentication": {
+        "managedIdentity": {
+          "identifier-type": "mi_res_id",
+          "identifier-name": "mi_res_id",
+          "identifier-value": "${azurerm_user_assigned_identity.aksuid.name}"
+        }
+      }
+  }
+  SETTINGS
+}

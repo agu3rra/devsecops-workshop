@@ -1,3 +1,4 @@
+# Log Analytics Workspace
 resource "azurerm_log_analytics_workspace" "loganws" {
     name                = "${var.prefix}-loganws"
     resource_group_name = azurerm_resource_group.rg.name
@@ -6,28 +7,7 @@ resource "azurerm_log_analytics_workspace" "loganws" {
     retention_in_days   = 30
 }
 
-resource "azurerm_virtual_machine_extension" "ama" {
-  name                 = "AzureMonitorLinuxAgent"
-  virtual_machine_id   = azurerm_linux_virtual_machine.mylinux.id
-  publisher            = "Microsoft.Azure.Monitor"
-  type                 = "AzureMonitorLinuxAgent"
-  type_handler_version = "1.29"
-
-  settings = <<SETTINGS
-  {
-      "workspaceId": "${azurerm_log_analytics_workspace.loganws.workspace_id}",
-      "workspaceKey": "${azurerm_log_analytics_workspace.loganws.primary_shared_key}",
-      "authentication": {
-        "managedIdentity": {
-          "identifier-type": "mi_res_id",
-          "identifier-name": "mi_res_id",
-          "identifier-value": "${azurerm_user_assigned_identity.aksuid.name}"
-        }
-      }
-  }
-  SETTINGS
-}
-
+# Data Collection endpoint
 resource "azurerm_monitor_data_collection_endpoint" "linuxdcendpoint" {
   name                          = "linuxvm-data-collection-endpoint"
   resource_group_name           = azurerm_resource_group.rg.name
@@ -37,6 +17,7 @@ resource "azurerm_monitor_data_collection_endpoint" "linuxdcendpoint" {
   description                   = "Collection endpoint for our first VM"
 }
 
+# Log collection rule: forwarding to Analytics Workspace
 resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
   name = "linuxvm-collection-rule-loganws"
   resource_group_name           = azurerm_resource_group.rg.name
@@ -114,7 +95,7 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
   }
 }
 
-# associate to a Data Collection Rule
+# Association VM > Log Analytics Workspace
 resource "azurerm_monitor_data_collection_rule_association" "datacolvm1" {
   name                    = "data-collection-vm-1"
   target_resource_id      = azurerm_linux_virtual_machine.mylinux.id
@@ -122,7 +103,7 @@ resource "azurerm_monitor_data_collection_rule_association" "datacolvm1" {
   description             = "Associates the collection rule for our first VM"
 }
 
-# Agent Direct To Store rule; required for Blob type destinations?
+# Agent Direct To Store rule: required for Blob type destinations
 resource "azurerm_monitor_data_collection_rule" "logcollectionrule2" {
   name = "linuxvm-collection-rule-blobs"
   resource_group_name           = azurerm_resource_group.rg.name
@@ -194,6 +175,7 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule2" {
   }
 }
 
+# Rule association VM > BLobs
 resource "azurerm_monitor_data_collection_rule_association" "datacolvm1blobs" {
   name                    = "data-collection-vm-1-blobs"
   target_resource_id      = azurerm_linux_virtual_machine.mylinux.id

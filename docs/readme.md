@@ -22,6 +22,7 @@
             - [Virtual Machine](#virtual-machine)
             - [Data collection rules](#data-collection-rules)
             - [Moving logs into Blob Storage](#moving-logs-into-blob-storage)
+            - [Generating a log entry for testing](#generating-a-log-entry-for-testing)
             - [Reading the Blobs](#reading-the-blobs)
     - [Challenges & Solutions](#challenges--solutions)
     - [Insights](#insights)
@@ -44,7 +45,35 @@
             - [Estimating solution cost](#estimating-solution-cost)
             - [Architect for high volume/low volume](#architect-for-high-volumelow-volume)
             - [Upload path semantics](#upload-path-semantics)
+<!-- TOC depthto:4 depthto:4 -->
+
+- [Execution notes](#execution-notes)
+    - [Summary](#summary)
+    - [Project Overview](#project-overview)
+    - [Expected outcomes](#expected-outcomes)
+    - [Execution plan](#execution-plan)
+    - [Technical details](#technical-details)
+        - [Solution diagram](#solution-diagram)
+        - [Execution](#execution)
+            - [Getting my Azure account](#getting-my-azure-account)
+            - [Local environment setup](#local-environment-setup)
+            - [Which infra region to select](#which-infra-region-to-select)
+            - [Estimating solution cost](#estimating-solution-cost)
+            - [Architect for high volume/low volume](#architect-for-high-volumelow-volume)
+            - [Upload path semantics](#upload-path-semantics)
             - [Cost estimates](#cost-estimates)
+            - [Terraform Plugin issues](#terraform-plugin-issues)
+            - [Virtual Machine](#virtual-machine)
+            - [Data collection rules](#data-collection-rules)
+            - [Moving logs into Blob Storage](#moving-logs-into-blob-storage)
+            - [Generating a log entry for testing](#generating-a-log-entry-for-testing)
+            - [Reading the Blobs](#reading-the-blobs)
+    - [Challenges & Solutions](#challenges--solutions)
+    - [Insights](#insights)
+    - [To do's:](#to-dos)
+    - [Security](#security)
+
+<!-- /TOC -->            - [Cost estimates](#cost-estimates)
             - [Terraform Plugin issues](#terraform-plugin-issues)
             - [Virtual Machine](#virtual-machine)
             - [Data collection rules](#data-collection-rules)
@@ -293,6 +322,14 @@ So in the end we're left with:
 VM >> generates logs >> collected by AMA VM extension with assigned user account << Data collection rule >> Blob storage.
 
 Cherry on top: Azure is handling a really grannular upload semantics for me.
+
+#### Generating a log entry for testing
+I am able to SSH into the VM and use the command below to issue a log entry.
+I noticed it got to both Log Analytics Workspace and Blob Storage within 1 minute after I generated it.
+
+```bash
+logger -p local0.warn "Issuing a test warning message."
+```
 
 #### Reading the Blobs
 I have to determine whether I will use Databricks to display the blobs OR I will simply use a service principal and provide a client CLI to obtain and view the log contents.
