@@ -15,9 +15,9 @@ resource "azuread_service_principal_password" "mbtsecret" {
   end_date             = "2024-03-01T00:00:00Z"
 }
 
-# Grants de account read access to our blob
-resource "azurerm_role_assignment" "mbtclistoacc" {
-  scope                = azurerm_storage_account.logs_storage_account.id
-  role_definition_name = "Storage Blob Data Reader"
-  principal_id         = azuread_service_principal.mbtsp.object_id
-}
+# Grants de account read access to our blob DUNNO WHY DIDNT WORK
+# resource "azurerm_role_assignment" "mbtclistoacc" {
+#   scope                = azurerm_storage_account.logs_storage_account.id
+#   role_definition_name = "Storage Blob Data Reader"
+#   principal_id         = azuread_service_principal.mbtsp.object_id
+# }
