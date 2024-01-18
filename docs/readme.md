@@ -361,12 +361,10 @@ I have to determine whether I will use Databricks to display the blobs OR I will
 - Azure Active Directory has been rebranded to *Azure Extra ID*.
 
 ## To do's:
-- TODO: [Docs on storage accounts](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) indicate that we can apply `network_rules` to allow list specific public IP's.
 - TODO: public_network_access_enabled = true revisit this for `azurerm_monitor_data_collection_endpoint`.
-- TODO: potential failure: f4a01be1-2c31-422b-bbef-78e86da34134.ods.opinsights.azure.com is not pinging even after NSG update.
-- TODO: Use service tags to update NSG rules that allow the VM to talk to Azure Monitor as [here](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-data-collection-endpoint).
-- TODO: how frequent is the data collection service sending data to its services?
 
 ## Security
 - restrict VNET access via NSG.
 - VM logs and their forwarding to different Azure services is being carried out without any actual passwords. I used Azure managed user-assigned identities and their access control is explictly controlled in Terraform.
+- Further hardening can include IP-based access control on Azure Blob Storage.
+- Use service tags to update NSG rules that allow the VM to talk to Azure Monitor as described [here](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-data-collection-endpoint). NSG's are IP-based, hence no rules can be directly created from the DNS entries for the required monitoring endpoints.
