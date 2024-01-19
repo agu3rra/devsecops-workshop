@@ -48,8 +48,8 @@ VM logs are to be retrieved via the created Azure function (running on the same 
 - [x] cost estimate calculations for the proposed solution (top it at 200 USD)
 - [x] refer to [Terraform azurerm docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs), so understand the input I need to provide to my Terraform script. Perhaps visit some of the resources in the Azure Portal UI to see if I get any additional contextual info that can help me decide how to configure each resource.
 - [ ] ~~see what I can get out of Azure function. I am guessing I can drag drop my way there to do fun stuff for me.~~ Managed to get the logs into Blob storage without using an Azure function.
-- [ ] note down challenges and solutions as I progress.
-- [ ] do blob reading to local terminal.
+- [x] note down challenges and solutions as I progress.
+- [x] do blob reading to local terminal.
 - [ ] create slide deck.
 - [ ] contact Gabriel and Hemanth for follow up call.
 
@@ -274,28 +274,15 @@ I have to determine whether I will use Databricks to display the blobs OR I will
 
 My plan is to create a service principal which will be associated with my CLI application (`mbt` - my blob tool).
 I then need to ensure that service principal account has read access to the blobs and we'll do this via... yes, Terraform.
-I'll then use the [azure-sdk-for-python](https://github.com/Azure/azure-sdk-for-python) and [python click](https://click.palletsprojects.com/en/8.1.x/) to create a CLI that does the following:
-
-```bash
-# asks user input for configuring blob access
-mbt init
-
-# lists available blobs
-mbt list
-
-# list and filter to see only blobs that contain the text filter on their path; option to -d for downloading them all to a folder
-mbt list -f <text-filter> -d /tmp
-
-# view the contents of a specific blob
-mbt view <blob-path>
-```
+I'll then use the [azure-sdk-for-python](https://github.com/Azure/azure-sdk-for-python) and [python click](https://click.palletsprojects.com/en/8.1.x/) to create a CLI that allows us to view and download the blobs to local storage.
 
 I cheated and did some role assignment in Azure for my AZ CLI service principal.
 Terraform was otherwise not able to assign me the blob storage read access also because of an apparent access issue.
 So I cheated twice and granted myself access to it via the Azure Portal menu and generated a secret ID via App registrations.
 Now I have access to the blob and the client id/secret to use OAuth flows to access the blob storage.
+Thinking about it further, the account with which I access the Blob Storage lives at the Azure Extra ID level, on the tenant, and not on the resource group in which my Terraform items live.
 
-> More soon...
+![listing-blobs-cli](./assets/success.png)
 
 ## Challenges & Solutions
 1. How to generate `WARNING/ERROR` type logs in case everything goes smoother than usual. [Ans.](#generating-a-log-entry-for-testing)
