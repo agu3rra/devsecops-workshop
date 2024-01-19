@@ -50,8 +50,8 @@ VM logs are to be retrieved via the created Azure function (running on the same 
 - [ ] ~~see what I can get out of Azure function. I am guessing I can drag drop my way there to do fun stuff for me.~~ Managed to get the logs into Blob storage without using an Azure function.
 - [x] note down challenges and solutions as I progress.
 - [x] do blob reading to local terminal.
-- [ ] create slide deck.
-- [ ] contact Gabriel and Hemanth for follow up call.
+- [x] create slide deck.
+- [x] contact Gabriel and Hemanth for follow up call.
 
 ## Technical details
 ### Solution diagram
