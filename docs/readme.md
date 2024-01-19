@@ -6,16 +6,16 @@
 - [Execution notes](#execution-notes)
     - [Summary](#summary)
     - [Project Overview](#project-overview)
-    - [Expected outcomes](#expected-outcomes)
+    - [Deliverables](#deliverables)
     - [Execution plan](#execution-plan)
     - [Technical details](#technical-details)
         - [Solution diagram](#solution-diagram)
-        - [Execution](#execution)
+        - [Execution Log](#execution-log)
             - [Getting my Azure account](#getting-my-azure-account)
             - [Local environment setup](#local-environment-setup)
             - [Which infra region to select](#which-infra-region-to-select)
             - [Estimating solution cost](#estimating-solution-cost)
-            - [Architect for high volume/low volume](#architect-for-high-volumelow-volume)
+            - [Architect for high/low volume](#architect-for-highlow-volume)
             - [Cost estimates](#cost-estimates)
             - [Terraform Plugin issues](#terraform-plugin-issues)
             - [Virtual Machine](#virtual-machine)
@@ -33,9 +33,10 @@
 The goal of this project is to evaluate my solution building skills while having fun at it.
 Displaying thoroughness and innovation as well as cost and security impacts is also one of the key deliverables.
 
-VM logs are to be retrieved via the created Azure function (running on the same VNET ought to do it), then the key to access Azure blob storage is to be retrieved using Azure key vault then simply send these logs (WARNING and ERROR only) to Azure Blob Storage.
+The practical objective is to use Infrastructure as Code (IaC) to deploy a Virtual Machine (VM) in a Hyperscaler provider (e.g.: Azure) and all required infrastructure to get the VM SysLogs automatically stored in a Blob Storage.
+We should be able to filter logs by severity/category at any point in time.
 
-## Expected outcomes
+## Deliverables
 - working (cost effective) solution in Azure.
 - 30 minute presentation (slide deck at [presentation](./presentation))
 
@@ -57,14 +58,16 @@ VM logs are to be retrieved via the created Azure function (running on the same 
 ### Solution diagram
 ![solution](./assets/block-diagram.png)
 
-### Execution
+### Execution Log
 #### Getting my Azure account
 - Signed up for a 200 USD free starter account on Azure.
 
 #### Local environment setup
 I need to setup my own account with Azure then setup macOS to be able to talk to Azure so that `Terraform` is able to actually go an deploy resources for me there.
-Before I can Terraform anything, I should create an Azure Resource Group which is where all my resource will end up.
+Before I can Terraform anything, I should create an Azure Resource Group (RG) which is where all my resource will end up.
 **IMPORTANT**: remember to destroy the resource group in its entirety at the end of the exercise so it stops charging me.
+
+PS: even the RG can be created using Terraform
 
 [reference](https://developer.hashicorp.com/terraform/tutorials/azure-get-started/azure-build).
 
@@ -88,7 +91,7 @@ az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/$SUBS_ID"
 #### Which infra region to select
 - https://azure.microsoft.com/en-us/explore/global-infrastructure
 - about 60 regions;
-- top most grouping is named "geography";
+- the top most grouping is named "geography";
 - a region is a subgroup inside of a geography
 - availability zones can be used to provide single digit millisecond fail over within a region.
 - reduce network latency by providing resources closer to users. Me in this case.
@@ -105,21 +108,21 @@ az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/$SUBS_ID"
     - Azure Functions: 1 million requests
     - Azure Event Grid: 100k operations per month. I can use the observer pattern and subscribe to logs as they go.
 
-#### Architect for high volume/low volume
+#### Architect for high/low volume
 I'll consider this one particular scenario is low volume, so I'll not use Azure Event Hub and will simply got straight from Azure Monitor to Event Grid instead.
 Looking at the overall architecture and for the purpose of the exercise, I believe this would make it easier to simply attach new VM's to Azure Monitor.
 Azure Function's sole purpose is log writing without having to worry how the events got there.
-I could of course, simply write a piece of code that reads and parses code straight from the VM, but that'd probably be harder to maintain/deploy.
+I could of course, simply write a piece of code that reads and parses code straight from the VM, but that'd probably be harder to maintain/deploy on each individual VM.
 
 #### Cost estimates
 Using [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/):
 - VM: using the cheapest I can find since its sole purpose is to generate logs for the exercise. Selected: B1ls at USD 0.0062/hour
 - Azure Monitor: Do I get security alerts for free in case I mess up my settings?
-- Azure Event Grid: routing events magically for Azure stuff. Like Kafka it seems. It also allows filtering, but I suspect I'll save some `$$$` if I can filter events on Azure Monitor, outbound to Event Grid.
+- Azure Event Grid: routing events magically for Azure stuff. It looks Like Kafka. It also allows filtering, but I suspect I'll save some `$$$` if I can filter events on Azure Monitor, outbound to Event Grid.
 - Azure functions: ball parking at about 1 million calls/month.
 - Storage: selected the hot storage flavor with local redundancy only as I don't have to worry about increased costs when accessing the data. Again, for the purposes of this exercise this is perhaps not soooo relevant.
 
-PS: I noticed `East US` resources are cheaper.
+PS: I noticed `East US` resources are even cheaper so I went for it instead of `Central US`.
 
 This is how it ended up like. I don't think I'll be using all of it, and since it is within my 200 USD limit I'll go for it.
 
@@ -127,6 +130,7 @@ This is how it ended up like. I don't think I'll be using all of it, and since i
 
 #### Terraform Plugin issues
 It turns out that using such a dated version of the `azurerm` Terraform plugin became rather problematic. 3.55.0 (about 10 months old) was the only one not giving me a hard time on macOS.
+I was able to use the latest version (about 4 days old) in my Windows PC, so the exercise continues there.
 
 #### Virtual Machine
 Using `az monitor diagnostic-settings categories list --resource [GIGANTIG_VM_IDENTIFIER]` I was able to tell my VM is currently only providing me with `Metrics` events.
@@ -147,31 +151,46 @@ Checked that `waagent` is up and running:
 
 ![waagent](./assets/waagent-ubuntu-18.04.png)
 
-Checking available extensions on `eastus` that could be interesting...
+Checking available extensions on `eastus` I found:
 ```yaml
 - name: AzureMonitorLinuxAgent
   publisher: Microsoft.Azure.Monitor
   version: 1.29.4
 ```
 
-AMA Extension installed successfully, but missing  Guest Configuration Service (GCS) details. Figuring out which settings to provide is proving to be difficult as the docs in Terraform don't have anything specific for VM logs. I believe if I was using the UI then it'd likely be much easier. Perhaps I can do that and then check the Extensions menu on the VM and copy settings from there to Terraform?
+AMA Extension installed successfully, but missing  Guest Configuration Service (GCS) details.
+Figuring out which settings to provide is proving to be difficult as the docs in Terraform don't have anything specific for VM logs.
+I believe if I was using the UI then it'd likely be much easier.
+Perhaps I can do that and then check the Extensions menu on the VM and copy settings from there to Terraform?
 
-https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-manage?tabs=azure-cli
-https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-data-collection-endpoint?tabs=PowerShellWindows
+References:
+- https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-manage?tabs=azure-cli
+- https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-data-collection-endpoint
 
-After deleting the AMA extension in Azure UI and 'terraform apply', it got provisioned successfully. I can't explain why though.
+---
 
-My new idea: Do the provisioning in the UI to have it work. Or via Azure CLI (since the UI doesn't display all available extensions) and SSH into the VM to peek at the config file for `waagent` at `/etc/waagent.conf`. I saved it to [waagent.conf](./inspect/waagent.conf), but it doesn't look like anything I expected. It should have a pointer to my Analytics Workspace somewhere. I'll try again using `az cli` to provision and inspect the same file again:
+After deleting the AMA extension in Azure UI and 'terraform apply', it got provisioned successfully.
+I can't explain why though.
+
+My new idea: Do the provisioning in the UI to have it work.
+Or via Azure CLI (since the UI doesn't display all available extensions) and SSH into the VM to peek at the config file for `waagent` at `/etc/waagent.conf`.
+I saved it to [waagent.conf](./inspect/waagent.conf), but it doesn't look like anything I expected.
+It should have a pointer to my Analytics Workspace somewhere.
+I'll try again using `az cli` to provision and inspect the same file again:
 
 ```bash
 az vm extension set --name AzureMonitorLinuxAgent --publisher Microsoft.Azure.Monitor --ids <vm-resource-id> --enable-auto-upgrade true
 ```
 
-It also worked, but the config file looks exactly the same. Perhaps I need to configure data collection points after even enabling them as the Azure Portal config does not seem to populate anything on Analytics Workspace either. Looking at the data collection UI, I see I have no data collection endpoints available yet, so perhaps this is what I need to enable next.
+It also worked, but the config file looks exactly the same.
+Perhaps I need to configure data collection points after even enabling them as the Azure Portal config does not seem to populate anything on Analytics Workspace either.
+Looking at the data collection UI, I see I have no data collection endpoints available yet, so perhaps this is what I need to enable next.
 
 ![ama-enabled](./assets/ama-enabled.png)
 
-I couldn't find the workspace id anywhere in `az vm extension show --resource-group guerra-VmLoggingRg --vm-name guerra-mylinux --name AzureMonitorLinuxAgent`. I wonder if it would appear if I had used my terraform script that provides it to the extension. It does!
+I couldn't find the workspace id anywhere in `az vm extension show --resource-group guerra-VmLoggingRg --vm-name guerra-mylinux --name AzureMonitorLinuxAgent`.
+I wonder if it would appear if I had used my terraform script that provides it to the extension.
+And... It does!
 
 ```json
 {
@@ -203,17 +222,23 @@ I couldn't find the workspace id anywhere in `az vm extension show --resource-gr
 #### Data collection rules
 It seems that this is the next element we need to terraform: [monitor_data_collection_rule](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_data_collection_rule).
 
-Ok, I setup collection rules and streams/destinations, but still see no logs flowing despite having included even INFO like events. I also see no Linux Agents on my Analytics Workspace. I see it has instructions to setup data collection rules, but that's already created. I am thinking this is an issue with the agent not having access to send the data where we need.
+Ok, I setup collection rules and streams/destinations, but still see no logs flowing despite having included even INFO like events.
+I also see no Linux Agents on my Analytics Workspace.
+I see it has instructions to setup data collection rules, but that's already created.
+I am thinking this is an issue with the agent not having access to send the data where we need.
 
-Maybe try to install AMA extension on the VM via a Custom Script? The Terraform docs show how to execute a custom script and the Azure docs show how to install the AMA extension.
+Maybe try to install AMA extension on the VM via a Custom Script?
+The Terraform docs show how to execute a custom script and the Azure docs show how to install the AMA extension using good old bash.
 
-```
-UPDATE: I am thinking my VM can't read the Azure Monitor endpoints due to the NSG rules:
-global.handler.control.monitor.azure.com
-<virtual-machine-region-name>.handler.control.monitor.azure.com (example: westus.handler.control.monitor.azure.com)
-<log-analytics-workspace-id>.ods.opinsights.azure.com (example: 12345a01-b1cd-1234-e1f2-1234567g8h99.ods.opinsights.azure.com)
-(If you use private links on the agent, you must also add the dce endpoints).
-```
+---
+UPDATE: I am thinking my VM can't read the Azure Monitor endpoints due to the Network Security Group (NSG) rules.
+It can be blocking outbound traffic to the following required locations:
+- global.handler.control.monitor.azure.com
+- <virtual-machine-region-name>.handler.control.monitor.azure.com (example: westus.handler.control.monitor.azure.com)
+- <log-analytics-workspace-id>.ods.opinsights.azure.com (example: 12345a01-b1cd-1234-e1f2-1234567g8h99.ods.opinsights.azure.com)
+PS: If you use private links on the agent, you must also add the dce endpoints.
+
+I had a DNS query resolve the IP's for the required destinations and added them on my NSG rules.
 
 Next step: verify if the system assigned account to the data collection setup is failing us.
 Work with an user defined one.
@@ -222,9 +247,12 @@ PS: The manual rule I created following [this doc](https://learn.microsoft.com/e
 The tutorial does mention a 20 minute wait until some action is perceived, so I'll leave the VM running overnight.
 I saw no Linux Agents detected in Azure Portal.
 
-**JACKPOT!**: I was missing the linux kind on my Terraform script.
+---
+
+**JACKPOT!**: I was missing the `Linux` kind on my Terraform script.
 Perhaps it's what was keeping my AMA logs from showing up.
-That and the network rules of course! I matched facility names and log levels as the working log to make sure I can now Terraform this stuff. 🤞
+That and the network rules of course!
+I matched facility names and log levels as the working log to make sure I can now Terraform this stuff. 🤞
 
 #### Moving logs into Blob Storage
 I'll try to have my data collection rule forward the syslogs I've already seen flowing into Log Analytics Workspace (LAW) into Azure Blob Storage (ABS) directly.
@@ -236,18 +264,25 @@ Does it support a service principal?
 Can we get vault to be accessed via a managed identity instead of a service principal?
 It is not listed at [MS docs](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/managed-identities-status) as supported, but neither is a data collection, so let's assume that it is possible for a moment.
 
-💡Use the user-assigned managed account and tie it to the storage account; Then we may not need to use Vault for the data collection. As we can say data collection uses that same user-account which will have access to storage and we are able to forward our logs! AFTER LUNCH!
+💡Use the user-assigned managed account and tie it to the storage account.
+Then we may not need to use Vault for the data collection at all.
+We can have the data collection rule use that same user-account which has access to the storage account (associated with our one blob storage), and we should be able to forward our logs even without Vault access on a `private` blob storage!
 
-Ok, I was able to assign the user-assigned managed account to the storage account and also to the data collection rule. I saw them reflected in Azure UI. I'll wait for some time until I can see logs in there. If this worked then I can create a service principal to use with the CLI app I intent to demonstrate has blob listing capabilities.
+Ok, I was able to assign the user-assigned managed account to the storage account and also to the data collection rule.
+I saw them reflected in Azure UI.
+I'll wait for some time until I can see logs in there
+ If this worked then I can create a service principal to use with the CLI app I intent to demonstrate has blob listing capabilities.
 
-I'll reboot the VM to see if that gets any logs flowing. I see very little activity in Log Analytics.
+I'll reboot the VM to see if that gets any logs flowing.
+I see very little activity in Log Analytics.
 
 Reading doc on how to [send AMA logs to event hub or storage](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-send-data-to-event-hubs-and-storage?tabs=linux%2Cwindows-1).
 [This](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-send-data-to-event-hubs-and-storage?tabs=linux%2Cwindows-1#whats-supported) tells me that both Event Hub and Storage are supported.
 [Pre-requisites](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-send-data-to-event-hubs-and-storage?tabs=linux%2Cwindows-1#prerequisites) indicate I am missing an association of the `user-assigned` account to the VM.
 [This](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-send-data-to-event-hubs-and-storage?tabs=linux%2Cwindows-1#create-dcr-association-and-deploy-azure-monitor-agent) indicates AMA settings I need to add in order to have AMA use the associated user-assigned id.
 
-Intersting. [log_analytics_linked_storage_account](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_linked_storage_account) indicates it can be possible to integrate log analytics with storage directly. Perhaps I will need this.
+Intersting. [log_analytics_linked_storage_account](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_linked_storage_account) indicates it can be possible to integrate log analytics with storage directly.
+Perhaps I will need this.
 
 **EUREKA!** Following the MS Docs above was really key.
 I now see logs being moved to Azure Blob Storage.
@@ -280,7 +315,7 @@ I cheated and did some role assignment in Azure for my AZ CLI service principal.
 Terraform was otherwise not able to assign me the blob storage read access also because of an apparent access issue.
 So I cheated twice and granted myself access to it via the Azure Portal menu and generated a secret ID via App registrations.
 Now I have access to the blob and the client id/secret to use OAuth flows to access the blob storage.
-Thinking about it further, the account with which I access the Blob Storage lives at the Azure Extra ID level, on the tenant, and not on the resource group in which my Terraform items live.
+Thinking about it further, the account with which I access the Blob Storage lives at the Azure Extra ID level, on the tenant, and not on the resource group in which my Terraformed items live.
 
 ![listing-blobs-cli](./assets/success.png)
 
@@ -309,7 +344,7 @@ Thinking about it further, the account with which I access the Blob Storage live
 - Azure Active Directory has been rebranded to *Azure Extra ID*.
 
 ## Security
-- restrict VNET access via NSG.
+- restricted VNET access via NSG.
 - VM logs and their forwarding to different Azure services is being carried out without any actual passwords. I used Azure managed user-assigned identities and their access control is explictly controlled in Terraform.
 - Further hardening can include IP-based access control on Azure Blob Storage.
 - Use service tags to update NSG rules that allow the VM to talk to Azure Monitor as described [here](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-data-collection-endpoint). NSG's are IP-based, hence no rules can be directly created from the DNS entries for the required monitoring endpoints.
