@@ -13,9 +13,8 @@
         - [Execution Log](#execution-log)
             - [Getting my Azure account](#getting-my-azure-account)
             - [Local environment setup](#local-environment-setup)
-            - [Which infra region to select](#which-infra-region-to-select)
-            - [Estimating solution cost](#estimating-solution-cost)
             - [Architect for high/low volume](#architect-for-highlow-volume)
+            - [Which infra region to select](#which-infra-region-to-select)
             - [Cost estimates](#cost-estimates)
             - [Terraform Plugin issues](#terraform-plugin-issues)
             - [Virtual Machine](#virtual-machine)
@@ -33,8 +32,9 @@
 The goal of this project is to evaluate my solution building skills while having fun at it.
 Displaying thoroughness and innovation as well as cost and security impacts is also one of the key deliverables.
 
-The practical objective is to use Infrastructure as Code (IaC) to deploy a Virtual Machine (VM) in a Hyperscaler provider (e.g.: Azure) and all required infrastructure to get the VM SysLogs automatically stored in a Blob Storage.
+The practical objective is to use Infrastructure as Code (IaC) to deploy a Virtual Machine (VM) in a Hyperscaler provider (e.g.: Azure) and all required infrastructure to get the VM SysLogs (system logs) automatically stored in an Azure Blob Storage (ABS).
 We should be able to filter logs by severity/category at any point in time.
+Access to any of the resources should prevent any type of anonymous access and preferably be behind some sort of IP allow list rules.
 
 ## Deliverables
 - working (cost effective) solution in Azure.
@@ -88,6 +88,12 @@ az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/$SUBS_ID"
  export ARM_TENANT_ID="<TENANT_VALUE>"
 ```
 
+#### Architect for high/low volume
+I'll consider this one particular scenario is low volume, so I'll not use Azure Event Hub and will simply got straight from Azure Monitor to Event Grid instead.
+Looking at the overall architecture and for the purpose of the exercise, I believe this would make it easier to simply attach new VM's to Azure Monitor.
+Azure Function's sole purpose is log writing without having to worry how the events got there.
+I could of course, simply write a piece of code that reads and parses code straight from the VM, but that'd probably be harder to maintain/deploy on each individual VM.
+
 #### Which infra region to select
 - https://azure.microsoft.com/en-us/explore/global-infrastructure
 - about 60 regions;
@@ -100,22 +106,13 @@ az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/$SUBS_ID"
 - [this filter](https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?products=functions,storage,virtual-network,virtual-machines,key-vault&regions=non-regional,brazil-south,brazil-southeast) states **Brazil South** is a sweet spot for me.
 - Looking at the price calculator (next section), I noticed **Central US** has cheaper VM's.
 
-#### Estimating solution cost
-- Azure pricing calculator
-- It looks like I can have the full free tier \o/: https://azure.microsoft.com/en-us/free/#all-free-services
+#### Cost estimates
+Using [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/):
+- It looks like I can use exclusively the free tier \o/: https://azure.microsoft.com/en-us/free/#all-free-services
     - 750 hours Linux VM
     - ABS 5GB with locally redundant storage
     - Azure Functions: 1 million requests
     - Azure Event Grid: 100k operations per month. I can use the observer pattern and subscribe to logs as they go.
-
-#### Architect for high/low volume
-I'll consider this one particular scenario is low volume, so I'll not use Azure Event Hub and will simply got straight from Azure Monitor to Event Grid instead.
-Looking at the overall architecture and for the purpose of the exercise, I believe this would make it easier to simply attach new VM's to Azure Monitor.
-Azure Function's sole purpose is log writing without having to worry how the events got there.
-I could of course, simply write a piece of code that reads and parses code straight from the VM, but that'd probably be harder to maintain/deploy on each individual VM.
-
-#### Cost estimates
-Using [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/):
 - VM: using the cheapest I can find since its sole purpose is to generate logs for the exercise. Selected: B1ls at USD 0.0062/hour
 - Azure Monitor: Do I get security alerts for free in case I mess up my settings?
 - Azure Event Grid: routing events magically for Azure stuff. It looks Like Kafka. It also allows filtering, but I suspect I'll save some `$$$` if I can filter events on Azure Monitor, outbound to Event Grid.
@@ -127,6 +124,8 @@ PS: I noticed `East US` resources are even cheaper so I went for it instead of `
 This is how it ended up like. I don't think I'll be using all of it, and since it is within my 200 USD limit I'll go for it.
 
 ![costs](./assets/costs.png)
+
+> Fun fact: at the end of the exercise it all amounted to about 1-2 USD in total.
 
 #### Terraform Plugin issues
 It turns out that using such a dated version of the `azurerm` Terraform plugin became rather problematic. 3.55.0 (about 10 months old) was the only one not giving me a hard time on macOS.
@@ -144,7 +143,7 @@ az vm stop --name guerra-mylinux --resource-group guerra-VmLoggingRg
 az vm deallocate --name guerra-mylinux --resource-group guerra-VmLoggingRg
 ```
 
-##### Enabling VM extension to monitor
+##### Enabling VM extension to monitor logs
 I found the list of available extensions at `az vm extension image list --location=eastus --publisher=Microsoft.Azure.Monitor --output table`. I also found the list of [compatible linux dependency agent versions](https://learn.microsoft.com/en-us/azure/azure-monitor/vm/vminsights-dependency-agent-maintenance#dependency-agent-linux-support), and [compatible AMA linux machines](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/agents-overview#linux), so I reverted to UbuntuServer 18.04 as it checks all the boxes.
 
 Checked that `waagent` is up and running:
@@ -348,3 +347,4 @@ Thinking about it further, the account with which I access the Blob Storage live
 - VM logs and their forwarding to different Azure services is being carried out without any actual passwords. I used Azure managed user-assigned identities and their access control is explictly controlled in Terraform.
 - Further hardening can include IP-based access control on Azure Blob Storage.
 - Use service tags to update NSG rules that allow the VM to talk to Azure Monitor as described [here](https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-data-collection-endpoint). NSG's are IP-based, hence no rules can be directly created from the DNS entries for the required monitoring endpoints.
+- Perhaps make use of Microsoft Defender for Cloud for enhanced security when using this for real world projects. Check other options as well.
