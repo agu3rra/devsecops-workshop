@@ -4,7 +4,6 @@ from typing import Optional
 from enum import Enum
 import pkg_resources
 import click
-from azure.identity import ClientSecretCredential
 
 from azure.identity import ClientSecretCredential
 from azure.storage.blob import BlobServiceClient
