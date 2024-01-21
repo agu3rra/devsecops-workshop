@@ -7,6 +7,45 @@ resource "azurerm_log_analytics_workspace" "loganws" {
     retention_in_days   = 30
 }
 
+# Log facilities we wish to include
+variable "required_log_facilities" {
+  type = list(string)
+  default = [
+    "alert",
+    "audit",
+    "auth",
+    "authpriv",
+    "ftp",
+    "kern",
+    "local0",
+    "local1",
+    "local2",
+    "local3",
+    "local4",
+    "local5",
+    "local6",
+    "local7",
+    "lpr",
+    "nopri",
+    "ntp",
+    "syslog",
+    "user"
+  ]
+}
+
+# Required log levels we wish
+variable "required_log_levels" {
+  type = list(string)
+  default = [
+    "Notice",
+    "Warning",
+    "Error",
+    "Critical",
+    "Alert",
+    "Emergency"
+  ]
+}
+
 # Log collection rule: forwarding to Analytics Workspace
 resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
   name = "linuxvm-collection-rule-loganws"
@@ -29,35 +68,8 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule1" {
   data_sources {
     syslog {
       name           = "linux-vm-syslog"
-      facility_names = [
-        "alert",
-        "audit",
-        "auth",
-        "authpriv",
-        "ftp",
-        "kern",
-        "local0",
-        "local1",
-        "local2",
-        "local3",
-        "local4",
-        "local5",
-        "local6",
-        "local7",
-        "lpr",
-        "nopri",
-        "ntp",
-        "syslog",
-        "user"
-      ]
-      log_levels     = [
-        "Notice",
-        "Warning",
-        "Error",
-        "Critical",
-        "Alert",
-        "Emergency"
-      ]
+      facility_names = var.required_log_facilities
+      log_levels     = var.required_log_levels
       streams        = ["Microsoft-Syslog"]
     }
   }
@@ -101,35 +113,8 @@ resource "azurerm_monitor_data_collection_rule" "logcollectionrule2" {
   data_sources {
     syslog {
       name           = "linux-vm-syslog"
-      facility_names = [
-        "alert",
-        "audit",
-        "auth",
-        "authpriv",
-        "ftp",
-        "kern",
-        "local0",
-        "local1",
-        "local2",
-        "local3",
-        "local4",
-        "local5",
-        "local6",
-        "local7",
-        "lpr",
-        "nopri",
-        "ntp",
-        "syslog",
-        "user"
-      ]
-      log_levels     = [
-        "Notice",
-        "Warning",
-        "Error",
-        "Critical",
-        "Alert",
-        "Emergency"
-      ]
+      facility_names = var.required_log_facilities
+      log_levels     = var.required_log_levels
       streams        = ["Microsoft-Syslog"]
     }
   }
