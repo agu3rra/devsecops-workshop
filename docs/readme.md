@@ -1,7 +1,7 @@
 # Execution notes
 
 ## Summary
-<!-- TOC depthto:4 depthto:4 -->
+<!-- TOC depthto:3 -->
 
 - [Execution notes](#execution-notes)
     - [Summary](#summary)
