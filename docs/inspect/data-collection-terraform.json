@@ -1,0 +1,67 @@
+{
+    "properties": {
+        "description": "",
+        "immutableId": "dcr-e208ec13f43a4f079f7609538dd688b5",
+        "dataCollectionEndpointId": "/subscriptions/03c70407-f5f1-46ef-ae0a-ad11011535b7/resourceGroups/guerra-VmLoggingRg/providers/Microsoft.Insights/dataCollectionEndpoints/linuxvm-data-collection-endpoint",
+        "dataSources": {
+            "syslog": [
+                {
+                    "streams": [
+                        "Microsoft-Syslog"
+                    ],
+                    "facilityNames": [
+                        "*"
+                    ],
+                    "logLevels": [
+                        "Error",
+                        "Warning",
+                        "Info"
+                    ],
+                    "name": "linux-vm-syslog"
+                }
+            ]
+        },
+        "destinations": {
+            "logAnalytics": [
+                {
+                    "workspaceResourceId": "/subscriptions/03c70407-f5f1-46ef-ae0a-ad11011535b7/resourceGroups/guerra-VmLoggingRg/providers/Microsoft.OperationalInsights/workspaces/guerra-loganws",
+                    "workspaceId": "b6fd31ec-4a4a-4f55-a556-43f639c39749",
+                    "name": "destination-log-ws-analytics"
+                }
+            ],
+            "storageAccounts": [
+                {
+                    "containerName": "guerralogscontainer",
+                    "storageAccountResourceId": "/subscriptions/03c70407-f5f1-46ef-ae0a-ad11011535b7/resourceGroups/guerra-VmLoggingRg/providers/Microsoft.Storage/storageAccounts/guerralogsaccount",
+                    "name": "destination-storage-blob"
+                }
+            ]
+        },
+        "dataFlows": [
+            {
+                "streams": [
+                    "Microsoft-Syslog"
+                ],
+                "destinations": [
+                    "destination-log-ws-analytics",
+                    "destination-storage-blob"
+                ]
+            }
+        ],
+        "provisioningState": "Succeeded"
+    },
+    "location": "eastus",
+    "tags": {},
+    "id": "/subscriptions/03c70407-f5f1-46ef-ae0a-ad11011535b7/resourceGroups/guerra-VmLoggingRg/providers/Microsoft.Insights/dataCollectionRules/linuxvm-collection-rule1",
+    "name": "linuxvm-collection-rule1",
+    "type": "Microsoft.Insights/dataCollectionRules",
+    "etag": "\"1c002a8c-0000-0100-0000-65a834e90000\"",
+    "systemData": {
+        "createdBy": "b41d3244-548a-448c-921f-f0468f9ff3b8",
+        "createdByType": "Application",
+        "createdAt": "2024-01-17T20:13:27.6891293Z",
+        "lastModifiedBy": "b41d3244-548a-448c-921f-f0468f9ff3b8",
+        "lastModifiedByType": "Application",
+        "lastModifiedAt": "2024-01-17T20:13:27.6891293Z"
+    }
+}
